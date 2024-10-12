@@ -11,6 +11,8 @@
         "-I${workspaceFolder}/Dependencies/glfw-3.4.bin.WIN64/include", // GLFW
         "-I${workspaceFolder}/Dependencies/glm", // GLM
         "-I${workspaceFolder}/Dependencies/stb_image", // STB_IMAGE
+        "-I${workspaceFolder}/sprites", // SPRITES
+        "-I${workspaceFolder}/shader", // Shader
         "${file}",
         "${workspaceFolder}/glad.c", // GLAD
         "${workspaceFolder}/Dependencies/stb_image/stb_image.cpp",
