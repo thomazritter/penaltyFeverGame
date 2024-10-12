@@ -39,10 +39,14 @@ bool keys[1024] = {false};
 
 // Controle para a seta de direção do chute
 float arrowPosX = 0.0f;
+float arrowPosY = 487.5f;
 float arrowSpeed = 7.5f;
 bool isArrowMovingRight = true;
+bool isArrowMovingUp = true;
+bool isVerticalArrowMoving = false;
 bool isPlayerShooting = true;
 bool isPlayerGoalkeeper = false;
+bool wasSpacePressed = false;
 
 // Controle para o círculo vermelho (onde a bola irá no modo goleiro)
 vec3 ballTargetPos = vec3(400.0f, 300.0f, 0.0f);
@@ -110,7 +114,7 @@ int main()
 	GLuint shaderID = setupShader();
 	// Gerando um buffer simples, com a geometria de um triângulo
 	// Sprite do fundo da cena
-	Sprite background, character, ball, player, goalkeeper, arrow, redCircle;
+	Sprite background, character, ball, player, goalkeeper, horizontalArrow, verticalArrow, redCircle;
 	// Carregando uma textura (recebendo seu ID)
 	// Inicializando a sprite do background
 	int imgWidth, imgHeight;
@@ -119,6 +123,7 @@ int main()
 	int ballTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/ball/movement.png", imgWidth, imgHeight);
 	int idlePlayer = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/player/player-idle.png", imgWidth, imgHeight);
 	int arrowTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/arrow/arrow.png", imgWidth, imgHeight);
+	int redCircleTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/circle/circle.png", imgWidth, imgHeight);
 	int idleGoalkeeperTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/goalkeeper/idle.png", imgWidth, imgHeight);
 	int movingPlayer = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/player/movement.png", imgWidth, imgHeight);
 
@@ -126,9 +131,9 @@ int main()
 	ball.setupSprite(ballTexture, vec3(400.0, 200.0, 0.0), vec3(16.0 * 3.0, 16.0 * 3.0, 1.0), 3, 1);
 	goalkeeper.setupSprite(idleGoalkeeperTexture, vec3(400.0, 475.0, 0.0), vec3(100.0, 150.0, 1.0), 1, 1);
 	player.setupSprite(idlePlayer, vec3(300.0, 175.0, 0.0), vec3(100.0, 150.0, 1.0), 1, 1);
-	arrow.setupSprite(arrowTexture, vec3(100.0, 300.0, 0.0), vec3(50.0, 50.0, 1.0), 1, 1);
-	// int redCircleTexture = loadTexture("red_circle.png", imgWidth, imgHeight);
-	// redCircle.setupSprite(redCircleTexture, vec3(400.0, 300.0, 0.0), vec3(50.0, 50.0, 1.0), 1, 1);
+	horizontalArrow.setupSprite(arrowTexture, vec3(100.0, 300.0, 0.0), vec3(50.0, 50.0, 1.0), 1, 1);
+	verticalArrow.angle = -90.0f;
+	verticalArrow.setupSprite(arrowTexture, vec3(175.0, 175.0, 0.0), vec3(50.0, 50.0, 1.0), 1, 1);
 	glUseProgram(shaderID);
 	glUniform1i(glGetUniformLocation(shaderID, "texBuffer"), 0);
 	mat4 projection = ortho(0.0f, 800.0f, 0.0f, 600.0f, -1.0f, 1.0f);
@@ -150,29 +155,61 @@ int main()
 		drawSprite(ball, shaderID);
 		drawSprite(goalkeeper, shaderID);
 		drawSprite(player, shaderID);
-		drawSprite(arrow, shaderID);
 		// Modo de chute do jogador
 		if (isPlayerShooting)
 		{
-			// Movimenta a seta da esquerda para a direita
-			if (isArrowMovingRight)
-				arrowPosX += arrowSpeed;
-			else
-				arrowPosX -= arrowSpeed;
-			// Inverta a direção se atingir os limites
-			if (arrowPosX > 625.0f)
-				isArrowMovingRight = false;
-			if (arrowPosX < 175.0f)
-				isArrowMovingRight = true;
-			// Atualiza a posição da seta
-			arrow.position.x = arrowPosX;
-			// Mostra a seta de direção
-			drawSprite(arrow, shaderID);
-			// Quando o jogador apertar `spacebar`, define a direção do chute
-			if (keys[GLFW_KEY_SPACE])
+			if (!isVerticalArrowMoving)
 			{
-				isPlayerShooting = false;
-				ballTargetPos.x = arrowPosX;
+				// Movimenta a seta da esquerda para a direita
+				if (isArrowMovingRight)
+					arrowPosX += arrowSpeed;
+				else
+					arrowPosX -= arrowSpeed;
+				// Inverta a direção se atingir os limites
+				if (arrowPosX > 625.0f)
+					isArrowMovingRight = false;
+				if (arrowPosX < 175.0f)
+					isArrowMovingRight = true;
+				// Atualiza a posição da seta
+				horizontalArrow.position.x = arrowPosX;
+				// Mostra a seta de direção
+				drawSprite(horizontalArrow, shaderID);
+			}
+			else
+			{
+				// Movimenta a seta de cima para baixo
+				if (isArrowMovingUp)
+					arrowPosY += arrowSpeed;
+				else
+					arrowPosY -= arrowSpeed;
+				// Inverta a direção se atingir os limites
+				if (arrowPosY > 575.0f)
+					isArrowMovingUp = false;
+				if (arrowPosY < 400.0f)
+					isArrowMovingUp = true;
+				// Atualiza a posição da seta
+				verticalArrow.position.y = arrowPosY;
+				// Mostra as setas de direção
+				drawSprite(verticalArrow, shaderID);
+				drawSprite(horizontalArrow, shaderID);
+			}
+
+			// Debounce the spacebar key press
+			if (keys[GLFW_KEY_SPACE] && !wasSpacePressed)
+			{
+				if (!isVerticalArrowMoving)
+				{
+					isVerticalArrowMoving = true;
+				}
+				else
+				{
+					isVerticalArrowMoving = false;
+				}
+				wasSpacePressed = true;
+			}
+			else if (!keys[GLFW_KEY_SPACE])
+			{
+				wasSpacePressed = false;
 			}
 		}
 		// Modo de goleiro do jogador
