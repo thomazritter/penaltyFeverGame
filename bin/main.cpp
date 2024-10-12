@@ -26,6 +26,7 @@ using namespace glm;
 // Protótipo da função de callback de teclado
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
 void renderBallMovement(Sprite &ball, GLuint shaderID, float ballTargetPosX, float ballTargetPosY, float ballSpeed, float totalDistance);
+void renderPlayerKick(Sprite &player, GLuint shaderID, int movingPlayerTexture);
 
 // Protótipos das funções
 int loadTexture(string filePath, int &imgWidth, int &imgHeight);
@@ -94,6 +95,60 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
 	}
 }
 
+void setupBallSprite(Sprite &ball)
+{
+	int imgWidth, imgHeight = 0;
+	int ballTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/ball/movement.png", imgWidth, imgHeight);
+	ball.setupSprite(ballTexture, vec3(400.0, 200.0, 0.0), vec3(imgWidth / 3.0 * 2.0, imgHeight * 2, 1.0), 3, 1);
+}
+
+void setupPlayerSprite(Sprite &player, bool isIdle)
+{
+	int imgWidth, imgHeight = 0;
+	int idlePlayer = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/player/player-idle.png", imgWidth, imgHeight);
+	int movingPlayer = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/player/movement.png", imgWidth, imgHeight);
+	if (isIdle)
+		player.setupSprite(idlePlayer, vec3(300.0, 175.0, 0.0), vec3(imgWidth / 2, imgHeight * 2.0, 1.0), 1, 1);
+	else
+		player.setupSprite(movingPlayer, vec3(300.0, 175.0, 0.0), vec3(imgWidth / 2, imgHeight * 2.0, 1.0), 5, 1);
+}
+
+void setupGoalkeeperSprite(Sprite &goalkeeper)
+{
+	int imgWidth, imgHeight = 0;
+	int idleGoalkeeperTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/goalkeeper/idle.png", imgWidth, imgHeight);
+	goalkeeper.setupSprite(idleGoalkeeperTexture, vec3(400.0, 475.0, 0.0), vec3(imgWidth * 2, imgHeight * 3, 1.0), 1, 1);
+}
+
+void setupBackgroundSprite(Sprite &background)
+{
+	int imgWidth, imgHeight = 0;
+	int bgTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/background/background.png", imgWidth, imgHeight);
+	background.setupSprite(bgTexture, vec3(400.0, 300.0, 0.0), vec3(800.0, 600.0, 1.0), 1, 1);
+}
+
+void setupHorizontalArrowSprite(Sprite &horizontalArrow)
+{
+	int imgWidth, imgHeight = 0;
+	int arrowTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/arrow/arrow.png", imgWidth, imgHeight);
+	horizontalArrow.setupSprite(arrowTexture, vec3(100.0, 300.0, 0.0), vec3(imgWidth * 2, imgHeight * 2, 1.0), 1, 1);
+}
+
+void setupVerticalArrowSprite(Sprite &verticalArrow)
+{
+	int imgWidth, imgHeight = 0;
+	verticalArrow.angle = -90.0f;
+	int arrowTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/arrow/arrow.png", imgWidth, imgHeight);
+	verticalArrow.setupSprite(arrowTexture, vec3(175.0, 175.0, 0.0), vec3(imgWidth * 2, imgHeight * 2, 1.0), 1, 1);
+}
+
+void setupRedCircleSprite(Sprite &redCircle)
+{
+	int imgWidth, imgHeight = 0;
+	int redCircleTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/circle/circle.png", imgWidth, imgHeight);
+	redCircle.setupSprite(redCircleTexture, vec3(400.0, 475.0, 0.0), vec3(100.0, 150.0, 1.0), 1, 1);
+}
+
 int main()
 {
 	glfwInit();
@@ -120,24 +175,14 @@ int main()
 	// Gerando um buffer simples, com a geometria de um triângulo
 	// Sprite do fundo da cena
 	Sprite background, ball, player, goalkeeper, horizontalArrow, verticalArrow, redCircle;
-	// Carregando uma textura (recebendo seu ID)
-	// Inicializando a sprite do background
-	int imgWidth, imgHeight;
-	// Carregar texturas
-	int bgTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/background/background.png", imgWidth, imgHeight);
-	int idlePlayer = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/player/player-idle.png", imgWidth, imgHeight);
-	int arrowTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/arrow/arrow.png", imgWidth, imgHeight);
-	int redCircleTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/circle/circle.png", imgWidth, imgHeight);
-	int idleGoalkeeperTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/goalkeeper/idle.png", imgWidth, imgHeight);
-	int movingPlayer = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/player/movement.png", imgWidth, imgHeight);
-	int ballTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/ball/movement.png", imgWidth, imgHeight);
-	ball.setupSprite(ballTexture, vec3(400.0, 200.0, 0.0), vec3(imgWidth / 3.0 * 2.0, imgHeight * 2, 1.0), 3, 1);
-	background.setupSprite(bgTexture, vec3(400.0, 300.0, 0.0), vec3(800.0, 600.0, 1.0), 1, 1);
-	goalkeeper.setupSprite(idleGoalkeeperTexture, vec3(400.0, 475.0, 0.0), vec3(100.0, 150.0, 1.0), 1, 1);
-	player.setupSprite(idlePlayer, vec3(300.0, 175.0, 0.0), vec3(100.0, 150.0, 1.0), 1, 1);
-	horizontalArrow.setupSprite(arrowTexture, vec3(100.0, 300.0, 0.0), vec3(50.0, 50.0, 1.0), 1, 1);
-	verticalArrow.angle = -90.0f;
-	verticalArrow.setupSprite(arrowTexture, vec3(175.0, 175.0, 0.0), vec3(50.0, 50.0, 1.0), 1, 1);
+
+	setupBackgroundSprite(background);
+	setupBallSprite(ball);
+	setupPlayerSprite(player, false);
+	setupGoalkeeperSprite(goalkeeper);
+	setupHorizontalArrowSprite(horizontalArrow);
+	setupVerticalArrowSprite(verticalArrow);
+
 	glUseProgram(shaderID);
 	glUniform1i(glGetUniformLocation(shaderID, "texBuffer"), 0);
 	mat4 projection = ortho(0.0f, 800.0f, 0.0f, 600.0f, -1.0f, 1.0f);
@@ -156,7 +201,6 @@ int main()
 		glUniform2f(glGetUniformLocation(shaderID, "offsetTex"), offsetTex.s, offsetTex.t);
 		// Desenhar o background
 		drawSprite(background, shaderID);
-
 		drawSprite(goalkeeper, shaderID);
 		drawSprite(player, shaderID);
 		// Modo de chute do jogador
@@ -225,6 +269,7 @@ int main()
 			}
 			else
 			{
+				// renderPlayerKick(player, shaderID, movingPlayer);
 				renderBallMovement(ball, shaderID, ballTargetPosX, ballTargetPosY, ballSpeed, totalDistance);
 			}
 		}
@@ -285,4 +330,11 @@ void renderBallMovement(Sprite &ball, GLuint shaderID, float ballTargetPosX, flo
 	glUniform2f(glGetUniformLocation(shaderID, "offsetTex"), offsetTex.s, offsetTex.t);
 	ball.position = glm::mix(ball.position, vec3(ballTargetPosX, ballTargetPosY, 0.0f), deltaTime * ballSpeed);
 	drawSprite(ball, shaderID);
+}
+
+void renderPlayerKick(Sprite &player, GLuint shaderID, int movingPlayerTexture)
+{
+	int imgWidth, imgHeight;
+	player.setupSprite(movingPlayerTexture, vec3(300.0, 175.0, 0.0), vec3(imgWidth, imgHeight, 1.0), 5, 1);
+	drawSprite(player, shaderID);
 }
