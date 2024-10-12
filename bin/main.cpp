@@ -25,6 +25,7 @@ using namespace glm;
 
 // Protótipo da função de callback de teclado
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
+void renderBallMovement(Sprite &ball, GLuint shaderID, float ballTargetPosX, float ballTargetPosY, float ballSpeed, float totalDistance);
 
 // Protótipos das funções
 int loadTexture(string filePath, int &imgWidth, int &imgHeight);
@@ -41,15 +42,19 @@ bool keys[1024] = {false};
 float arrowPosX = 0.0f;
 float arrowPosY = 487.5f;
 float arrowSpeed = 7.5f;
+float ballSpeed = 0.5f;
+float totalDistance = 0.0f;
 bool isArrowMovingRight = true;
 bool isArrowMovingUp = true;
 bool isVerticalArrowMoving = false;
 bool isPlayerShooting = true;
 bool isPlayerGoalkeeper = false;
+bool isPlayerSelectingTarget = true;
 bool wasSpacePressed = false;
 
-// Controle para o círculo vermelho (onde a bola irá no modo goleiro)
-vec3 ballTargetPos = vec3(400.0f, 300.0f, 0.0f);
+float ballTargetPosX = 0.0f;
+float ballTargetPosY = 0.0f;
+
 bool showRedCircle = false;
 float circleDisplayTime = 1.0f;
 float circleTimer = 0.0f;
@@ -114,21 +119,20 @@ int main()
 	GLuint shaderID = setupShader();
 	// Gerando um buffer simples, com a geometria de um triângulo
 	// Sprite do fundo da cena
-	Sprite background, character, ball, player, goalkeeper, horizontalArrow, verticalArrow, redCircle;
+	Sprite background, ball, player, goalkeeper, horizontalArrow, verticalArrow, redCircle;
 	// Carregando uma textura (recebendo seu ID)
 	// Inicializando a sprite do background
 	int imgWidth, imgHeight;
 	// Carregar texturas
 	int bgTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/background/background.png", imgWidth, imgHeight);
-	int ballTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/ball/movement.png", imgWidth, imgHeight);
 	int idlePlayer = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/player/player-idle.png", imgWidth, imgHeight);
 	int arrowTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/arrow/arrow.png", imgWidth, imgHeight);
 	int redCircleTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/circle/circle.png", imgWidth, imgHeight);
 	int idleGoalkeeperTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/goalkeeper/idle.png", imgWidth, imgHeight);
 	int movingPlayer = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/player/movement.png", imgWidth, imgHeight);
-
+	int ballTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/ball/movement.png", imgWidth, imgHeight);
+	ball.setupSprite(ballTexture, vec3(400.0, 200.0, 0.0), vec3(imgWidth / 3.0 * 2.0, imgHeight * 2, 1.0), 3, 1);
 	background.setupSprite(bgTexture, vec3(400.0, 300.0, 0.0), vec3(800.0, 600.0, 1.0), 1, 1);
-	ball.setupSprite(ballTexture, vec3(400.0, 200.0, 0.0), vec3(16.0 * 3.0, 16.0 * 3.0, 1.0), 3, 1);
 	goalkeeper.setupSprite(idleGoalkeeperTexture, vec3(400.0, 475.0, 0.0), vec3(100.0, 150.0, 1.0), 1, 1);
 	player.setupSprite(idlePlayer, vec3(300.0, 175.0, 0.0), vec3(100.0, 150.0, 1.0), 1, 1);
 	horizontalArrow.setupSprite(arrowTexture, vec3(100.0, 300.0, 0.0), vec3(50.0, 50.0, 1.0), 1, 1);
@@ -152,64 +156,76 @@ int main()
 		glUniform2f(glGetUniformLocation(shaderID, "offsetTex"), offsetTex.s, offsetTex.t);
 		// Desenhar o background
 		drawSprite(background, shaderID);
-		drawSprite(ball, shaderID);
+
 		drawSprite(goalkeeper, shaderID);
 		drawSprite(player, shaderID);
 		// Modo de chute do jogador
 		if (isPlayerShooting)
 		{
-			if (!isVerticalArrowMoving)
+			if (isPlayerSelectingTarget)
 			{
-				// Movimenta a seta da esquerda para a direita
-				if (isArrowMovingRight)
-					arrowPosX += arrowSpeed;
+				drawSprite(ball, shaderID);
+				if (!isVerticalArrowMoving)
+				{
+					// Movimenta a seta da esquerda para a direita
+					if (isArrowMovingRight)
+						arrowPosX += arrowSpeed;
+					else
+						arrowPosX -= arrowSpeed;
+					// Inverta a direção se atingir os limites
+					if (arrowPosX > 625.0f)
+						isArrowMovingRight = false;
+					if (arrowPosX < 175.0f)
+						isArrowMovingRight = true;
+					// Atualiza a posição da seta
+					horizontalArrow.position.x = arrowPosX;
+					// Mostra a seta de direção
+					drawSprite(horizontalArrow, shaderID);
+				}
 				else
-					arrowPosX -= arrowSpeed;
-				// Inverta a direção se atingir os limites
-				if (arrowPosX > 625.0f)
-					isArrowMovingRight = false;
-				if (arrowPosX < 175.0f)
-					isArrowMovingRight = true;
-				// Atualiza a posição da seta
-				horizontalArrow.position.x = arrowPosX;
-				// Mostra a seta de direção
-				drawSprite(horizontalArrow, shaderID);
+				{
+					// Movimenta a seta de cima para baixo
+					if (isArrowMovingUp)
+						arrowPosY += arrowSpeed;
+					else
+						arrowPosY -= arrowSpeed;
+					// Inverta a direção se atingir os limites
+					if (arrowPosY > 575.0f)
+						isArrowMovingUp = false;
+					if (arrowPosY < 400.0f)
+						isArrowMovingUp = true;
+					// Atualiza a posição da seta
+					verticalArrow.position.y = arrowPosY;
+					// Mostra as setas de direção
+					drawSprite(verticalArrow, shaderID);
+					drawSprite(horizontalArrow, shaderID);
+				}
+
+				// Debounce the spacebar key press
+				if (keys[GLFW_KEY_SPACE] && !wasSpacePressed)
+				{
+					if (!isVerticalArrowMoving)
+					{
+						ballTargetPosX = arrowPosX;
+						isVerticalArrowMoving = true;
+					}
+					else
+					{
+						ballTargetPosY = arrowPosY;
+						ball.lastTime = glfwGetTime();
+						isPlayerSelectingTarget = false;
+						totalDistance = sqrt(pow(ballTargetPosX - ball.position.x, 2) + pow(ballTargetPosY - ball.position.y, 2));
+					}
+					wasSpacePressed = true;
+				}
+				else if (!keys[GLFW_KEY_SPACE])
+				{
+					wasSpacePressed = false;
+				}
 			}
 			else
 			{
-				// Movimenta a seta de cima para baixo
-				if (isArrowMovingUp)
-					arrowPosY += arrowSpeed;
-				else
-					arrowPosY -= arrowSpeed;
-				// Inverta a direção se atingir os limites
-				if (arrowPosY > 575.0f)
-					isArrowMovingUp = false;
-				if (arrowPosY < 400.0f)
-					isArrowMovingUp = true;
-				// Atualiza a posição da seta
-				verticalArrow.position.y = arrowPosY;
-				// Mostra as setas de direção
-				drawSprite(verticalArrow, shaderID);
-				drawSprite(horizontalArrow, shaderID);
-			}
-
-			// Debounce the spacebar key press
-			if (keys[GLFW_KEY_SPACE] && !wasSpacePressed)
-			{
-				if (!isVerticalArrowMoving)
-				{
-					isVerticalArrowMoving = true;
-				}
-				else
-				{
-					isVerticalArrowMoving = false;
-				}
-				wasSpacePressed = true;
-			}
-			else if (!keys[GLFW_KEY_SPACE])
-			{
-				wasSpacePressed = false;
+				renderBallMovement(ball, shaderID, ballTargetPosX, ballTargetPosY, ballSpeed, totalDistance);
 			}
 		}
 		// Modo de goleiro do jogador
@@ -221,7 +237,7 @@ int main()
 				circleTimer += glfwGetTime();
 				if (circleTimer < circleDisplayTime)
 				{
-					redCircle.position = ballTargetPos;
+					// redCircle.position = ballTargetPos;
 					drawSprite(redCircle, shaderID);
 				}
 				else
@@ -241,4 +257,32 @@ int main()
 	}
 	glfwTerminate();
 	return 0;
+}
+
+void renderBallMovement(Sprite &ball, GLuint shaderID, float ballTargetPosX, float ballTargetPosY, float ballSpeed, float totalDistance)
+{
+	float currentTime = glfwGetTime();
+	float deltaTime = currentTime - ball.lastTime;
+	float currentDistance = sqrt(pow(ballTargetPosX - ball.position.x, 2) + pow(ballTargetPosY - ball.position.y, 2));
+
+	vec2 offsetTex = vec2(0.0, 0.0);
+	glUniform2f(glGetUniformLocation(shaderID, "offsetTex"), offsetTex.s, offsetTex.t);
+
+	if (deltaTime >= 1.0 / ball.FPS)
+	{
+		if (ball.iFrame < 2 && currentDistance < totalDistance / 3)
+		{
+			ball.iFrame = 2;
+		}
+		else if (ball.iFrame < 1 && currentDistance < totalDistance / 3 * 2)
+		{
+			ball.iFrame = 1;
+		}
+		ball.lastTime = glfwGetTime();
+	}
+	offsetTex.s = ball.iFrame * ball.d.s;
+	offsetTex.t = 0.0;
+	glUniform2f(glGetUniformLocation(shaderID, "offsetTex"), offsetTex.s, offsetTex.t);
+	ball.position = glm::mix(ball.position, vec3(ballTargetPosX, ballTargetPosY, 0.0f), deltaTime * ballSpeed);
+	drawSprite(ball, shaderID);
 }
