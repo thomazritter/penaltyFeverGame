@@ -16,14 +16,20 @@ struct Sprite
     glm::vec3 position;
     glm::vec3 dimensions;
     float angle;
-    // Para controle da animação
     int nAnimations, nFrames;
     int iAnimation, iFrame;
-    glm::vec2 d;
+    glm::vec2 d;         // Size of each frame in texture coordinates
+    glm::vec2 offsetTex; // Offset in texture coordinates for the current frame
     float FPS;
     float lastTime;
 
-    // Função de inicialização
+    // Function to update the frame offset based on the current animation and frame
+    void updateFrame()
+    {
+        offsetTex.s = iFrame * d.s;
+        offsetTex.t = iAnimation * d.t;
+    }
+
     void setupSprite(int texID, glm::vec3 position, glm::vec3 dimensions, int nFrames, int nAnimations);
 };
 
@@ -39,6 +45,9 @@ void Sprite::setupSprite(int texID, glm::vec3 position, glm::vec3 dimensions, in
 
     d.s = 1.0 / (float)nFrames;
     d.t = 1.0 / (float)nAnimations;
+
+    // Initialize the texture offset for the first frame
+    updateFrame();
     // Aqui setamos as coordenadas x, y e z do triângulo e as armazenamos de forma
     // sequencial, já visando mandar para o VBO (Vertex Buffer Objects)
     // Cada atributo do vértice (coordenada, cores, coordenadas de textura, normal, etc)
@@ -128,27 +137,22 @@ int loadTexture(std::string filePath, int &imgWidth, int &imgHeight)
     return texID;
 }
 
-void drawSprite(Sprite spr, GLuint shaderID)
+void drawSprite(Sprite &spr, GLuint shaderID)
 {
     glBindVertexArray(spr.VAO);
-
     glBindTexture(GL_TEXTURE_2D, spr.texID);
 
     glm::mat4 model = glm::mat4(1);
-    // Translação
     model = glm::translate(model, spr.position);
-    // Rotação
     model = glm::rotate(model, glm::radians(spr.angle), glm::vec3(0.0, 0.0, 1.0));
-    // Escala
     model = glm::scale(model, spr.dimensions);
-    // Enviar para o shader
+
     glUniformMatrix4fv(glGetUniformLocation(shaderID, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
-    // Chamada de desenho - drawcall
-    // Poligono Preenchido - GL_TRIANGLES
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glUniform2f(glGetUniformLocation(shaderID, "offsetTex"), spr.offsetTex.s, spr.offsetTex.t);
 
-    glBindVertexArray(0); // Desconectando o buffer de geometria
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
 }
 
 #endif

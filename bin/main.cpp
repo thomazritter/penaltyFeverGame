@@ -25,12 +25,11 @@ using namespace glm;
 
 // Protótipo da função de callback de teclado
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
-void renderBallMovement(Sprite &ball, GLuint shaderID, float ballTargetPosX, float ballTargetPosY, float ballSpeed, float totalDistance);
-void renderPlayerKick(Sprite &player, GLuint shaderID, int movingPlayerTexture);
+void renderBallMovement(Sprite &ball, GLuint shaderID);
+void renderPlayerKick(Sprite &player, GLuint shaderID);
 
 // Protótipos das funções
 int loadTexture(string filePath, int &imgWidth, int &imgHeight);
-void drawSprite(Sprite spr, GLuint shaderID);
 
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 800, HEIGHT = 600;
@@ -44,11 +43,12 @@ float arrowPosX = 0.0f;
 float arrowPosY = 487.5f;
 float arrowSpeed = 7.5f;
 float ballSpeed = 0.5f;
-float totalDistance = 0.0f;
+float totalBallDistance = 0.0f;
 bool isArrowMovingRight = true;
 bool isArrowMovingUp = true;
 bool isVerticalArrowMoving = false;
 bool isPlayerShooting = true;
+bool isKickAnimationComplete = false;
 bool isPlayerGoalkeeper = false;
 bool isPlayerSelectingTarget = true;
 bool wasSpacePressed = false;
@@ -102,15 +102,11 @@ void setupBallSprite(Sprite &ball)
 	ball.setupSprite(ballTexture, vec3(400.0, 200.0, 0.0), vec3(imgWidth / 3.0 * 2.0, imgHeight * 2, 1.0), 3, 1);
 }
 
-void setupPlayerSprite(Sprite &player, bool isIdle)
+void setupPlayerSprite(Sprite &player)
 {
 	int imgWidth, imgHeight = 0;
-	int idlePlayer = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/player/player-idle.png", imgWidth, imgHeight);
-	int movingPlayer = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/player/movement.png", imgWidth, imgHeight);
-	if (isIdle)
-		player.setupSprite(idlePlayer, vec3(300.0, 175.0, 0.0), vec3(imgWidth / 2, imgHeight * 2.0, 1.0), 1, 1);
-	else
-		player.setupSprite(movingPlayer, vec3(300.0, 175.0, 0.0), vec3(imgWidth / 2, imgHeight * 2.0, 1.0), 5, 1);
+	int playerTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/player/movement.png", imgWidth, imgHeight);
+	player.setupSprite(playerTexture, vec3(300.0, 175.0, 0.0), vec3(imgWidth / 2, imgHeight * 2.0, 1.0), 6, 1);
 }
 
 void setupGoalkeeperSprite(Sprite &goalkeeper)
@@ -178,7 +174,7 @@ int main()
 
 	setupBackgroundSprite(background);
 	setupBallSprite(ball);
-	setupPlayerSprite(player, false);
+	setupPlayerSprite(player);
 	setupGoalkeeperSprite(goalkeeper);
 	setupHorizontalArrowSprite(horizontalArrow);
 	setupVerticalArrowSprite(verticalArrow);
@@ -202,13 +198,16 @@ int main()
 		// Desenhar o background
 		drawSprite(background, shaderID);
 		drawSprite(goalkeeper, shaderID);
-		drawSprite(player, shaderID);
+
 		// Modo de chute do jogador
 		if (isPlayerShooting)
 		{
+			drawSprite(ball, shaderID);
+			drawSprite(player, shaderID);
+
 			if (isPlayerSelectingTarget)
 			{
-				drawSprite(ball, shaderID);
+
 				if (!isVerticalArrowMoving)
 				{
 					// Movimenta a seta da esquerda para a direita
@@ -258,7 +257,7 @@ int main()
 						ballTargetPosY = arrowPosY;
 						ball.lastTime = glfwGetTime();
 						isPlayerSelectingTarget = false;
-						totalDistance = sqrt(pow(ballTargetPosX - ball.position.x, 2) + pow(ballTargetPosY - ball.position.y, 2));
+						totalBallDistance = sqrt(pow(ballTargetPosX - ball.position.x, 2) + pow(ballTargetPosY - ball.position.y, 2));
 					}
 					wasSpacePressed = true;
 				}
@@ -269,8 +268,14 @@ int main()
 			}
 			else
 			{
-				// renderPlayerKick(player, shaderID, movingPlayer);
-				renderBallMovement(ball, shaderID, ballTargetPosX, ballTargetPosY, ballSpeed, totalDistance);
+				if (!isKickAnimationComplete)
+				{
+					renderPlayerKick(player, shaderID);
+				}
+				else
+				{
+					renderBallMovement(ball, shaderID);
+								}
 			}
 		}
 		// Modo de goleiro do jogador
@@ -304,37 +309,72 @@ int main()
 	return 0;
 }
 
-void renderBallMovement(Sprite &ball, GLuint shaderID, float ballTargetPosX, float ballTargetPosY, float ballSpeed, float totalDistance)
+void renderBallMovement(Sprite &ball, GLuint shaderID)
 {
 	float currentTime = glfwGetTime();
 	float deltaTime = currentTime - ball.lastTime;
 	float currentDistance = sqrt(pow(ballTargetPosX - ball.position.x, 2) + pow(ballTargetPosY - ball.position.y, 2));
 
-	vec2 offsetTex = vec2(0.0, 0.0);
-	glUniform2f(glGetUniformLocation(shaderID, "offsetTex"), offsetTex.s, offsetTex.t);
-
-	if (deltaTime >= 1.0 / ball.FPS)
+	if (deltaTime >= 1.0f / ball.FPS)
 	{
-		if (ball.iFrame < 2 && currentDistance < totalDistance / 3)
+		// Update frame and texture coordinates based on the current distance
+		if (ball.iFrame < 2 && currentDistance < totalBallDistance / 3)
 		{
 			ball.iFrame = 2;
 		}
-		else if (ball.iFrame < 1 && currentDistance < totalDistance / 3 * 2)
+		else if (ball.iFrame < 1 && currentDistance < totalBallDistance / 3 * 2)
 		{
 			ball.iFrame = 1;
 		}
-		ball.lastTime = glfwGetTime();
+		ball.updateFrame(); // Update the texture coordinates
+		ball.lastTime = currentTime;
 	}
-	offsetTex.s = ball.iFrame * ball.d.s;
-	offsetTex.t = 0.0;
-	glUniform2f(glGetUniformLocation(shaderID, "offsetTex"), offsetTex.s, offsetTex.t);
 	ball.position = glm::mix(ball.position, vec3(ballTargetPosX, ballTargetPosY, 0.0f), deltaTime * ballSpeed);
-	drawSprite(ball, shaderID);
 }
 
-void renderPlayerKick(Sprite &player, GLuint shaderID, int movingPlayerTexture)
+void renderPlayerKick(Sprite &player, GLuint shaderID)
 {
-	int imgWidth, imgHeight;
-	player.setupSprite(movingPlayerTexture, vec3(300.0, 175.0, 0.0), vec3(imgWidth, imgHeight, 1.0), 5, 1);
-	drawSprite(player, shaderID);
+
+	float currentTime = glfwGetTime();
+	float deltaTime = currentTime - player.lastTime;
+
+	if (deltaTime >= 2.0 / player.FPS)
+	{
+		if (player.iFrame == 5)
+		{
+			isKickAnimationComplete = true;
+		}
+		if (player.iFrame == 4)
+		{
+			player.iFrame = 5;
+			player.position.x = 400.0f;
+			player.position.y = 200.0f;
+		}
+		else if (player.iFrame == 3)
+		{
+			player.iFrame = 4;
+			player.position.x = 380.0f;
+			player.position.y = 195.0f;
+		}
+		else if (player.iFrame == 2)
+		{
+			player.iFrame = 3;
+			player.position.x = 360.0f;
+			player.position.y = 190.0f;
+		}
+		else if (player.iFrame == 1)
+		{
+			player.iFrame = 2;
+			player.position.x = 340.0f;
+			player.position.y = 185.0f;
+		}
+		else if (player.iFrame == 0)
+		{
+			player.iFrame = 1;
+			player.position.x = 320.0f;
+			player.position.y = 180.0f;
+		}
+		player.updateFrame();
+		player.lastTime = glfwGetTime();
+	}
 }
