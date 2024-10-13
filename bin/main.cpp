@@ -25,6 +25,9 @@ using namespace std;
 
 #include <random>
 
+#include <player.h>
+#include <ball.h>
+
 using namespace glm;
 
 GoalLimits goalLimits = {
@@ -45,8 +48,11 @@ bool keys[1024] = {false};
 // Shader
 GLuint shaderID;
 
+Player player;
+Ball ball;
+
 // Sprites
-Sprite background, ball, player, goalkeeper, horizontalArrow, verticalArrow, redCircle;
+Sprite background, goalkeeper, horizontalArrow, verticalArrow, redCircle;
 
 // Controle para a seta de direção do chute
 float arrowPosX = (goalLimits.leftBottom.x + goalLimits.rightTop.x) / 2.0f;
@@ -115,20 +121,6 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 
 	if (action == GLFW_RELEASE)
 		keys[key] = false;
-}
-
-void setupBallSprite()
-{
-	int imgWidth, imgHeight = 0;
-	int ballTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/ball/movement.png", imgWidth, imgHeight);
-	ball.setupSprite(ballTexture, vec3(400.0, 200.0, 0.0), vec3(imgWidth / 3.0 * 3.0, imgHeight * 2, 1.5), 3, 1);
-}
-
-void setupPlayerSprite()
-{
-	int imgWidth, imgHeight = 0;
-	int playerTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/player/movement.png", imgWidth, imgHeight);
-	player.setupSprite(playerTexture, vec3(300.0, 175.0, 0.0), vec3(imgWidth / 2, imgHeight * 2.0, 1.0), 6, 1);
 }
 
 void setupGoalkeeperSprite()
@@ -216,100 +208,10 @@ void moveVerticalArrow()
 	verticalArrow.position.y = arrowPosY;
 }
 
-void moveBall()
-{
-	// Calculate the total distance between the ball's current position and the target
-	float dx = kickTarget.x - ball.position.x;
-	float dy = kickTarget.y - ball.position.y;
-	float distance = sqrt(dx * dx + dy * dy); // Hypotenuse
-
-	// Only move the ball if the distance is greater than a small threshold
-	if (distance > 3.0f)
-	{
-		// Normalize the direction vector by dividing by the distance (hypotenuse)
-		float directionX = dx / distance;
-		float directionY = dy / distance;
-
-		// Move the ball by a fixed step size
-		float stepSize = ballSpeed * 0.032f; // Assuming a constant frame time of 16ms (~60 FPS)
-		ball.position.x += directionX * stepSize;
-		ball.position.y += directionY * stepSize;
-
-		// Update the animation frame based on the distance traveled
-		if (distance < totalBallDistance / 3)
-		{
-			ball.updateFrame(2);
-		}
-		else if (distance < totalBallDistance / 3 * 2)
-		{
-			ball.updateFrame(1);
-		}
-		else
-		{
-			ball.updateFrame(0);
-		}
-	}
-	else
-	{
-		// Ensure the ball reaches the exact target when it's close enough
-		ball.position.x = kickTarget.x;
-		ball.position.y = kickTarget.y;
-		isBallAnimationComplete = true;
-	}
-}
-
-void movePlayer()
-{
-
-	float currentTime = glfwGetTime();
-	float deltaTime = currentTime - player.lastTime;
-
-	if (deltaTime >= 1.5 / player.FPS)
-	{
-		if (player.iFrame == 4)
-		{
-			player.updateFrame(5);
-			player.position.x = 400.0f;
-			player.position.y = 220.0f;
-		}
-		else if (player.iFrame == 3)
-		{
-			player.updateFrame(4);
-			player.position.x = 380.0f;
-			player.position.y = 210.0f;
-		}
-		else if (player.iFrame == 2)
-		{
-			player.updateFrame(3);
-			player.position.x = 360.0f;
-			player.position.y = 190.0f;
-		}
-		else if (player.iFrame == 1)
-		{
-			player.updateFrame(2);
-			player.position.x = 340.0f;
-			player.position.y = 185.0f;
-		}
-		else if (player.iFrame == 0)
-		{
-			player.updateFrame(1);
-			player.position.x = 320.0f;
-			player.position.y = 180.0f;
-		}
-		player.lastTime = glfwGetTime();
-	}
-	if (player.iFrame == 5)
-	{
-		isKickAnimationComplete = true;
-	}
-}
-
 void resetPositions()
 {
-	ball.position = vec3(400.0, 200.0, 0.0);
-	ball.updateFrame(0);
-	player.position = vec3(300.0, 175.0, 0.0);
-	player.updateFrame(0);
+	ball.resetPositions();
+	player.resetPositions();
 	goalkeeper.position = vec3(400.0, 475.0, 0.0);
 	goalkeeper.updateFrame(0);
 	isPlayerShooting = false;
@@ -346,8 +248,8 @@ int main()
 	// Gerando um buffer simples, com a geometria de um triângulo
 
 	setupBackgroundSprite();
-	setupBallSprite();
-	setupPlayerSprite();
+	player.setupSprite();
+	ball.setupSprite();
 	setupGoalkeeperSprite();
 	setupHorizontalArrowSprite();
 	setupVerticalArrowSprite();
@@ -373,8 +275,8 @@ int main()
 
 		drawSprite(background, shaderID);
 		drawSprite(goalkeeper, shaderID);
-		drawSprite(ball, shaderID);
-		drawSprite(player, shaderID);
+		drawSprite(ball.sprite, shaderID);
+		drawSprite(player.sprite, shaderID);
 
 		if (isPlayerShooting)
 		{
@@ -404,9 +306,9 @@ int main()
 					else
 					{
 						kickTarget.y = arrowPosY;
-						ball.lastTime = glfwGetTime();
+						ball.sprite.lastTime = glfwGetTime();
 						isPlayerSelectingTarget = false;
-						totalBallDistance = sqrt(pow(kickTarget.x - ball.position.x, 2) + pow(kickTarget.y - ball.position.y, 2));
+						totalBallDistance = sqrt(pow(kickTarget.x - ball.sprite.position.x, 2) + pow(kickTarget.y - ball.sprite.position.y, 2));
 					}
 					wasSpacePressed = true;
 				}
@@ -419,13 +321,13 @@ int main()
 			{
 				if (!isKickAnimationComplete)
 				{
-					movePlayer();
+					player.movePlayer(isKickAnimationComplete);
 				}
 				else
 				{
 					if (!isBallAnimationComplete)
 					{
-						moveBall();
+						ball.moveBall(isBallAnimationComplete, kickTarget, ballSpeed, totalBallDistance);
 					}
 					else
 					{
@@ -456,13 +358,13 @@ int main()
 				{
 					if (!isKickAnimationComplete)
 					{
-						movePlayer();
+						player.movePlayer(isKickAnimationComplete);
 					}
 					else
 					{
 						if (!isBallAnimationComplete)
 						{
-							moveBall();
+							ball.moveBall(isBallAnimationComplete, kickTarget, ballSpeed, totalBallDistance);
 						}
 						else
 						{
