@@ -19,8 +19,8 @@ Goalkeeper::Goalkeeper() {}
 void Goalkeeper::setupSprite()
 {
     int imgWidth, imgHeight = 0;
-    int idleGoalkeeperTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/goalkeeper/idle.png", imgWidth, imgHeight);
-    sprite.setupSprite(idleGoalkeeperTexture, glm::vec3(400.0, 475.0, 0.0), glm::vec3(imgWidth * 2, imgHeight * 3, 1.0), 1, 1);
+    int goalkeeperTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/goalkeeper/movement.png", imgWidth, imgHeight);
+    sprite.setupSprite(goalkeeperTexture, glm::vec3(400.0, 475.0, 0.0), glm::vec3(imgWidth / 3, imgHeight * 3.0, 1.0), 7, 1);
 }
 
 void Goalkeeper::resetPositions()

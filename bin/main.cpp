@@ -206,7 +206,6 @@ int main()
 					drawSprite(horizontalArrow.sprite, shaderID);
 				}
 
-				// Debounce the spacebar key press
 				if (keys[GLFW_KEY_SPACE] && !wasSpacePressed)
 				{
 					if (!isVerticalArrowMoving)
