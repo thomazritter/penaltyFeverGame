@@ -13,8 +13,8 @@
         "-I${workspaceFolder}/Dependencies/stb_image", // STB_IMAGE
         "-I${workspaceFolder}/sprites", // SPRITES
         "-I${workspaceFolder}/shader", // Shader
-        "-I${workspaceFolder}/utils", // Shader
-        "-I${workspaceFolder}/characters", // Shader
+        "-I${workspaceFolder}/utils",
+        "-I${workspaceFolder}/entities",
         "${file}",
         "${workspaceFolder}/glad.c", // GLAD
         "${workspaceFolder}/Dependencies/stb_image/stb_image.cpp",

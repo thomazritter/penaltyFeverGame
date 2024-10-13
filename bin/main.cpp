@@ -23,10 +23,12 @@ using namespace std;
 
 #include <utils.h>
 
-#include <random>
-
 #include <player.h>
 #include <ball.h>
+#include <arrow.h>
+#include <target.h>
+#include <background.h>
+#include <goalkeeper.h>
 
 using namespace glm;
 
@@ -50,18 +52,13 @@ GLuint shaderID;
 
 Player player;
 Ball ball;
-
-// Sprites
-Sprite background, goalkeeper, horizontalArrow, verticalArrow, redCircle;
+Arrow horizontalArrow = Arrow(true);
+Arrow verticalArrow = Arrow(false);
+Target target;
+Background background;
+Goalkeeper goalkeeper;
 
 // Controle para a seta de direção do chute
-float arrowPosX = (goalLimits.leftBottom.x + goalLimits.rightTop.x) / 2.0f;
-float arrowPosY = (goalLimits.leftBottom.y + goalLimits.rightTop.y) / 2.0f;
-float arrowSpeed = 7.5f;
-float ballSpeed = 75.0f;
-float totalBallDistance = 0.0f;
-bool isArrowMovingRight = true;
-bool isArrowMovingUp = true;
 bool isVerticalArrowMoving = false;
 bool isPlayerShooting = true;
 bool isPlayerSelectingTarget = true;
@@ -71,7 +68,7 @@ bool wasSpacePressed = false;
 
 Coordinates kickTarget = {0.0f, 0.0f};
 
-bool showRedCircle = false;
+bool showTarget = false;
 float circleDisplayTime = 360.0f;
 float circleTimer = 0.0f;
 
@@ -123,103 +120,17 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 		keys[key] = false;
 }
 
-void setupGoalkeeperSprite()
-{
-	int imgWidth, imgHeight = 0;
-	int idleGoalkeeperTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/goalkeeper/idle.png", imgWidth, imgHeight);
-	goalkeeper.setupSprite(idleGoalkeeperTexture, vec3(400.0, 475.0, 0.0), vec3(imgWidth * 2, imgHeight * 3, 1.0), 1, 1);
-}
-
-void setupBackgroundSprite()
-{
-	int imgWidth, imgHeight = 0;
-	int bgTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/background/movement.png", imgWidth, imgHeight);
-	background.setupSprite(bgTexture, vec3(400.0, 300.0, 0.0), vec3(800.0, 600.0, 1.0), 2, 1);
-}
-
-void setupHorizontalArrowSprite()
-{
-	int imgWidth, imgHeight = 0;
-	int arrowTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/arrow/arrow.png", imgWidth, imgHeight);
-	horizontalArrow.setupSprite(arrowTexture, vec3(100.0, 300.0, 0.0), vec3(imgWidth * 2, imgHeight * 2, 1.0), 1, 1);
-}
-
-void setupVerticalArrowSprite()
-{
-	int imgWidth, imgHeight = 0;
-	verticalArrow.angle = -90.0f;
-	int arrowTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/arrow/arrow.png", imgWidth, imgHeight);
-	verticalArrow.setupSprite(arrowTexture, vec3(175.0, 175.0, 0.0), vec3(imgWidth * 2, imgHeight * 2, 1.0), 1, 1);
-}
-
-void setupRedCircleSprite()
-{
-	int imgWidth, imgHeight = 0;
-	int redCircleTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/circle/circle.png", imgWidth, imgHeight);
-	redCircle.setupSprite(redCircleTexture, vec3(600.0, 0.0, 0.0), vec3(imgWidth * 5.0f, imgHeight * 5.0f, 1.0), 1, 1);
-}
-
-float randomFloat(float min, float max)
-{
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<> dis(min, max);
-	return dis(gen);
-}
-
-// Function to select a random position inside the goal limits
-void selectRandomKickTarget()
-{
-	float randomX = randomFloat(goalLimits.leftBottom.x, goalLimits.rightTop.x);
-	float randomY = randomFloat(goalLimits.leftBottom.y, goalLimits.rightTop.y);
-	kickTarget = {randomX, randomY};
-	redCircle.position = vec3(randomX, randomY, 0.0f);
-}
-
-void moveHorizontalArrow()
-{
-	// Movimenta a seta da esquerda para a direita
-	if (isArrowMovingRight)
-		arrowPosX += arrowSpeed;
-	else
-		arrowPosX -= arrowSpeed;
-	// Inverta a direção se atingir os limites
-	if (arrowPosX > goalLimits.rightTop.x * 1.1f)
-		isArrowMovingRight = false;
-	if (arrowPosX < goalLimits.leftBottom.x * 0.9f)
-		isArrowMovingRight = true;
-	// Atualiza a posição da seta
-	horizontalArrow.position.x = arrowPosX;
-}
-
-void moveVerticalArrow()
-{
-	// Movimenta a seta de cima para baixo
-	if (isArrowMovingUp)
-		arrowPosY += arrowSpeed;
-	else
-		arrowPosY -= arrowSpeed;
-	// Inverta a direção se atingir os limites
-	if (arrowPosY > goalLimits.rightTop.y * 1.1f)
-		isArrowMovingUp = false;
-	if (arrowPosY < goalLimits.leftBottom.y * 0.9f)
-		isArrowMovingUp = true;
-	// Atualiza a posição da seta
-	verticalArrow.position.y = arrowPosY;
-}
-
 void resetPositions()
 {
 	ball.resetPositions();
 	player.resetPositions();
-	goalkeeper.position = vec3(400.0, 475.0, 0.0);
-	goalkeeper.updateFrame(0);
+	goalkeeper.resetPositions();
 	isPlayerShooting = false;
 	isPlayerSelectingTarget = false;
 	isVerticalArrowMoving = false;
 	isKickAnimationComplete = false;
 	isBallAnimationComplete = false;
-	showRedCircle = false;
+	showTarget = false;
 	circleTimer = 0.0f;
 }
 
@@ -247,13 +158,13 @@ int main()
 	// Compilando e buildando o programa de shader
 	// Gerando um buffer simples, com a geometria de um triângulo
 
-	setupBackgroundSprite();
+	background.setupSprite();
 	player.setupSprite();
 	ball.setupSprite();
-	setupGoalkeeperSprite();
-	setupHorizontalArrowSprite();
-	setupVerticalArrowSprite();
-	setupRedCircleSprite();
+	goalkeeper.setupSprite();
+	horizontalArrow.setupSprite();
+	verticalArrow.setupSprite();
+	target.setupSprite();
 
 	shaderID = setupShader();
 	glUseProgram(shaderID);
@@ -273,8 +184,8 @@ int main()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // cor de fundo
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		drawSprite(background, shaderID);
-		drawSprite(goalkeeper, shaderID);
+		drawSprite(background.sprite, shaderID);
+		drawSprite(goalkeeper.sprite, shaderID);
 		drawSprite(ball.sprite, shaderID);
 		drawSprite(player.sprite, shaderID);
 
@@ -285,14 +196,14 @@ int main()
 
 				if (!isVerticalArrowMoving)
 				{
-					moveHorizontalArrow();
-					drawSprite(horizontalArrow, shaderID);
+					horizontalArrow.move(goalLimits);
+					drawSprite(horizontalArrow.sprite, shaderID);
 				}
 				else
 				{
-					moveVerticalArrow();
-					drawSprite(verticalArrow, shaderID);
-					drawSprite(horizontalArrow, shaderID);
+					verticalArrow.move(goalLimits);
+					drawSprite(verticalArrow.sprite, shaderID);
+					drawSprite(horizontalArrow.sprite, shaderID);
 				}
 
 				// Debounce the spacebar key press
@@ -300,15 +211,15 @@ int main()
 				{
 					if (!isVerticalArrowMoving)
 					{
-						kickTarget.x = arrowPosX;
+						kickTarget.x = horizontalArrow.sprite.position.x;
 						isVerticalArrowMoving = true;
 					}
 					else
 					{
-						kickTarget.y = arrowPosY;
+						kickTarget.y = verticalArrow.sprite.position.y;
 						ball.sprite.lastTime = glfwGetTime();
 						isPlayerSelectingTarget = false;
-						totalBallDistance = sqrt(pow(kickTarget.x - ball.sprite.position.x, 2) + pow(kickTarget.y - ball.sprite.position.y, 2));
+						ball.totalBallDistance = sqrt(pow(kickTarget.x - ball.sprite.position.x, 2) + pow(kickTarget.y - ball.sprite.position.y, 2));
 					}
 					wasSpacePressed = true;
 				}
@@ -327,7 +238,7 @@ int main()
 				{
 					if (!isBallAnimationComplete)
 					{
-						ball.moveBall(isBallAnimationComplete, kickTarget, ballSpeed, totalBallDistance);
+						ball.moveBall(isBallAnimationComplete, kickTarget);
 					}
 					else
 					{
@@ -339,20 +250,20 @@ int main()
 		}
 		else
 		{
-			if (!showRedCircle)
+			if (!showTarget)
 			{
-				selectRandomKickTarget();
-				showRedCircle = true;
+				target.selectRandomKickTarget(kickTarget, goalLimits);
+				showTarget = true;
 			}
 
 			// Mostra o círculo vermelho onde a bola irá
-			if (showRedCircle)
+			if (showTarget)
 			{
 				circleTimer += glfwGetTime();
 				if (circleTimer < circleDisplayTime)
 				{
 					isKickAnimationComplete = false;
-					drawSprite(redCircle, shaderID);
+					drawSprite(target.sprite, shaderID);
 				}
 				else
 				{
@@ -364,7 +275,7 @@ int main()
 					{
 						if (!isBallAnimationComplete)
 						{
-							ball.moveBall(isBallAnimationComplete, kickTarget, ballSpeed, totalBallDistance);
+							ball.moveBall(isBallAnimationComplete, kickTarget);
 						}
 						else
 						{
