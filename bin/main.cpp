@@ -25,9 +25,6 @@ using namespace std;
 
 #include <random>
 
-#include <player.h>
-#include <ball.h>
-
 using namespace glm;
 
 GoalLimits goalLimits = {
@@ -48,17 +45,14 @@ bool keys[1024] = {false};
 // Shader
 GLuint shaderID;
 
-Player player;
-Ball ball;
-
 // Sprites
-Sprite background, goalkeeper, horizontalArrow, verticalArrow, redCircle;
+Sprite background, ball, player, goalkeeper, horizontalArrow, verticalArrow, redCircle;
 
 // Controle para a seta de direção do chute
 float arrowPosX = (goalLimits.leftBottom.x + goalLimits.rightTop.x) / 2.0f;
 float arrowPosY = (goalLimits.leftBottom.y + goalLimits.rightTop.y) / 2.0f;
-float arrowSpeed = 7.5f;
-float ballSpeed = 75.0f;
+float arrowSpeed = 0.2f;
+float ballSpeed = 5.0f;
 float totalBallDistance = 0.0f;
 bool isArrowMovingRight = true;
 bool isArrowMovingUp = true;
@@ -123,24 +117,38 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 		keys[key] = false;
 }
 
+void setupBallSprite()
+{
+	int imgWidth, imgHeight = 0;
+	int ballTexture = loadTexture("C:/Users/Thomaz/Desktop/penaltyFeverGame/sprites/ball/movement.png", imgWidth, imgHeight);
+	ball.setupSprite(ballTexture, vec3(400.0, 200.0, 0.0), vec3(imgWidth / 3.0 * 3.0, imgHeight * 2, 1.5), 3, 1);
+}
+
+void setupPlayerSprite()
+{
+	int imgWidth, imgHeight = 0;
+	int playerTexture = loadTexture("C:/Users/Thomaz/Desktop/penaltyFeverGame/sprites/player/movement.png", imgWidth, imgHeight);
+	player.setupSprite(playerTexture, vec3(300.0, 175.0, 0.0), vec3(imgWidth / 2, imgHeight * 2.0, 1.0), 6, 1);
+}
+
 void setupGoalkeeperSprite()
 {
 	int imgWidth, imgHeight = 0;
-	int idleGoalkeeperTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/goalkeeper/idle.png", imgWidth, imgHeight);
-	goalkeeper.setupSprite(idleGoalkeeperTexture, vec3(400.0, 475.0, 0.0), vec3(imgWidth * 2, imgHeight * 3, 1.0), 1, 1);
+	int goalkeeperTexture = loadTexture("C:/Users/Thomaz/Desktop/penaltyFeverGame/sprites/goalkeeper/movement.png", imgWidth, imgHeight);
+	goalkeeper.setupSprite(goalkeeperTexture, vec3(400.0, 475.0, 0.0), vec3(imgWidth / 3, imgHeight * 3.0, 1.0), 7, 1);
 }
 
 void setupBackgroundSprite()
 {
 	int imgWidth, imgHeight = 0;
-	int bgTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/background/movement.png", imgWidth, imgHeight);
+	int bgTexture = loadTexture("C:/Users/Thomaz/Desktop/penaltyFeverGame/sprites/background/movement.png", imgWidth, imgHeight);
 	background.setupSprite(bgTexture, vec3(400.0, 300.0, 0.0), vec3(800.0, 600.0, 1.0), 2, 1);
 }
 
 void setupHorizontalArrowSprite()
 {
 	int imgWidth, imgHeight = 0;
-	int arrowTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/arrow/arrow.png", imgWidth, imgHeight);
+	int arrowTexture = loadTexture("C:/Users/Thomaz/Desktop/penaltyFeverGame/sprites/arrow/arrow.png", imgWidth, imgHeight);
 	horizontalArrow.setupSprite(arrowTexture, vec3(100.0, 300.0, 0.0), vec3(imgWidth * 2, imgHeight * 2, 1.0), 1, 1);
 }
 
@@ -148,14 +156,14 @@ void setupVerticalArrowSprite()
 {
 	int imgWidth, imgHeight = 0;
 	verticalArrow.angle = -90.0f;
-	int arrowTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/arrow/arrow.png", imgWidth, imgHeight);
+	int arrowTexture = loadTexture("C:/Users/Thomaz/Desktop/penaltyFeverGame/sprites/arrow/arrow.png", imgWidth, imgHeight);
 	verticalArrow.setupSprite(arrowTexture, vec3(175.0, 175.0, 0.0), vec3(imgWidth * 2, imgHeight * 2, 1.0), 1, 1);
 }
 
 void setupRedCircleSprite()
 {
 	int imgWidth, imgHeight = 0;
-	int redCircleTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/circle/circle.png", imgWidth, imgHeight);
+	int redCircleTexture = loadTexture("C:/Users/Thomaz/Desktop/penaltyFeverGame/sprites/circle/circle.png", imgWidth, imgHeight);
 	redCircle.setupSprite(redCircleTexture, vec3(600.0, 0.0, 0.0), vec3(imgWidth * 5.0f, imgHeight * 5.0f, 1.0), 1, 1);
 }
 
@@ -208,10 +216,100 @@ void moveVerticalArrow()
 	verticalArrow.position.y = arrowPosY;
 }
 
+void moveBall()
+{
+	// Calculate the total distance between the ball's current position and the target
+	float dx = kickTarget.x - ball.position.x;
+	float dy = kickTarget.y - ball.position.y;
+	float distance = sqrt(dx * dx + dy * dy); // Hypotenuse
+
+	// Only move the ball if the distance is greater than a small threshold
+	if (distance > 3.0f)
+	{
+		// Normalize the direction vector by dividing by the distance (hypotenuse)
+		float directionX = dx / distance;
+		float directionY = dy / distance;
+
+		// Move the ball by a fixed step size
+		float stepSize = ballSpeed * 0.032f; // Assuming a constant frame time of 16ms (~60 FPS)
+		ball.position.x += directionX * stepSize;
+		ball.position.y += directionY * stepSize;
+
+		// Update the animation frame based on the distance traveled
+		if (distance < totalBallDistance / 3)
+		{
+			ball.updateFrame(2);
+		}
+		else if (distance < totalBallDistance / 3 * 2)
+		{
+			ball.updateFrame(1);
+		}
+		else
+		{
+			ball.updateFrame(0);
+		}
+	}
+	else
+	{
+		// Ensure the ball reaches the exact target when it's close enough
+		ball.position.x = kickTarget.x;
+		ball.position.y = kickTarget.y;
+		isBallAnimationComplete = true;
+	}
+}
+
+void movePlayer()
+{
+
+	float currentTime = glfwGetTime();
+	float deltaTime = currentTime - player.lastTime;
+
+	if (deltaTime >= 1.5 / player.FPS)
+	{
+		if (player.iFrame == 4)
+		{
+			player.updateFrame(5);
+			player.position.x = 400.0f;
+			player.position.y = 220.0f;
+		}
+		else if (player.iFrame == 3)
+		{
+			player.updateFrame(4);
+			player.position.x = 380.0f;
+			player.position.y = 210.0f;
+		}
+		else if (player.iFrame == 2)
+		{
+			player.updateFrame(3);
+			player.position.x = 360.0f;
+			player.position.y = 190.0f;
+		}
+		else if (player.iFrame == 1)
+		{
+			player.updateFrame(2);
+			player.position.x = 340.0f;
+			player.position.y = 185.0f;
+		}
+		else if (player.iFrame == 0)
+		{
+			player.updateFrame(1);
+			player.position.x = 320.0f;
+			player.position.y = 180.0f;
+		}
+		player.lastTime = glfwGetTime();
+	}
+	if (player.iFrame == 5)
+	{
+		isKickAnimationComplete = true;
+	}
+}
+
 void resetPositions()
 {
-	ball.resetPositions();
-	player.resetPositions();
+	ball.position = vec3(400.0, 200.0, 0.0);
+	ball.updateFrame(0);
+	player.position = vec3(300.0, 175.0, 0.0);
+	player.updateFrame(0);
 	goalkeeper.position = vec3(400.0, 475.0, 0.0);
 	goalkeeper.updateFrame(0);
 	isPlayerShooting = false;
@@ -248,8 +346,8 @@ int main()
 	// Gerando um buffer simples, com a geometria de um triângulo
 
 	setupBackgroundSprite();
-	player.setupSprite();
-	ball.setupSprite();
+	setupBallSprite();
+	setupPlayerSprite();
 	setupGoalkeeperSprite();
 	setupHorizontalArrowSprite();
 	setupVerticalArrowSprite();
@@ -275,8 +373,8 @@ int main()
 
 		drawSprite(background, shaderID);
 		drawSprite(goalkeeper, shaderID);
-		drawSprite(ball.sprite, shaderID);
-		drawSprite(player.sprite, shaderID);
+		drawSprite(ball, shaderID);
+		drawSprite(player, shaderID);
 
 		if (isPlayerShooting)
 		{
@@ -295,7 +393,6 @@ int main()
 					drawSprite(horizontalArrow, shaderID);
 				}
 
-				// Debounce the spacebar key press
 				if (keys[GLFW_KEY_SPACE] && !wasSpacePressed)
 				{
 					if (!isVerticalArrowMoving)
@@ -306,9 +403,9 @@ int main()
 					else
 					{
 						kickTarget.y = arrowPosY;
-						ball.sprite.lastTime = glfwGetTime();
+						ball.lastTime = glfwGetTime();
 						isPlayerSelectingTarget = false;
-						totalBallDistance = sqrt(pow(kickTarget.x - ball.sprite.position.x, 2) + pow(kickTarget.y - ball.sprite.position.y, 2));
+						totalBallDistance = sqrt(pow(kickTarget.x - ball.position.x, 2) + pow(kickTarget.y - ball.position.y, 2));
 					}
 					wasSpacePressed = true;
 				}
@@ -319,58 +416,40 @@ int main()
 			}
 			else
 			{
-				if (!isKickAnimationComplete)
+				if (!showRedCircle)
 				{
-					player.movePlayer(isKickAnimationComplete);
+					//change here - we need to ensure that defender must click the right spot of the ball hit
+					selectRandomKickTarget();
+					showRedCircle = true;
 				}
-				else
-				{
-					if (!isBallAnimationComplete)
-					{
-						ball.moveBall(isBallAnimationComplete, kickTarget, ballSpeed, totalBallDistance);
-					}
-					else
-					{
-						resetPositions();
-						isPlayerShooting = false;
-					}
-				}
-			}
-		}
-		else
-		{
-			if (!showRedCircle)
-			{
-				selectRandomKickTarget();
-				showRedCircle = true;
-			}
 
-			// Mostra o círculo vermelho onde a bola irá
-			if (showRedCircle)
-			{
-				circleTimer += glfwGetTime();
-				if (circleTimer < circleDisplayTime)
+				// Mostra o círculo vermelho onde a bola irá
+				if (showRedCircle)
 				{
-					isKickAnimationComplete = false;
-					drawSprite(redCircle, shaderID);
-				}
-				else
-				{
-					if (!isKickAnimationComplete)
+					circleTimer += glfwGetTime();
+					if (circleTimer < circleDisplayTime)
 					{
-						player.movePlayer(isKickAnimationComplete);
+						isKickAnimationComplete = false;
+						drawSprite(redCircle, shaderID);
 					}
 					else
 					{
-						if (!isBallAnimationComplete)
+						if (!isKickAnimationComplete)
 						{
-							ball.moveBall(isBallAnimationComplete, kickTarget, ballSpeed, totalBallDistance);
+							movePlayer();
 						}
 						else
 						{
-							resetPositions();
-							isPlayerShooting = true;
-							isPlayerSelectingTarget = true;
+							if (!isBallAnimationComplete)
+							{
+								moveBall();
+							}
+							else
+							{
+								resetPositions();
+								isPlayerShooting = true;
+								isPlayerSelectingTarget = true;
+							}
 						}
 					}
 				}
