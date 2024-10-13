@@ -21,21 +21,11 @@ using namespace std;
 #include <sprite.h>
 #include <Shader.h>
 
+#include <utils.h>
+
 #include <random>
 
 using namespace glm;
-
-struct Coordinates
-{
-	float x;
-	float y;
-};
-
-struct GoalLimits
-{
-	Coordinates leftBottom;
-	Coordinates rightTop;
-};
 
 GoalLimits goalLimits = {
 	{209.0f, 414.0f}, // leftBottom
@@ -234,7 +224,7 @@ void moveBall()
 	float distance = sqrt(dx * dx + dy * dy); // Hypotenuse
 
 	// Only move the ball if the distance is greater than a small threshold
-	if (distance > 1.0f)
+	if (distance > 3.0f)
 	{
 		// Normalize the direction vector by dividing by the distance (hypotenuse)
 		float directionX = dx / distance;
@@ -248,17 +238,16 @@ void moveBall()
 		// Update the animation frame based on the distance traveled
 		if (distance < totalBallDistance / 3)
 		{
-			ball.iFrame = 2;
+			ball.updateFrame(2);
 		}
 		else if (distance < totalBallDistance / 3 * 2)
 		{
-			ball.iFrame = 1;
+			ball.updateFrame(1);
 		}
 		else
 		{
-			ball.iFrame = 0;
+			ball.updateFrame(0);
 		}
-		ball.updateFrame(); // Update the texture coordinates for the new frame
 	}
 	else
 	{
@@ -279,35 +268,34 @@ void movePlayer()
 	{
 		if (player.iFrame == 4)
 		{
-			player.iFrame = 5;
+			player.updateFrame(5);
 			player.position.x = 400.0f;
 			player.position.y = 220.0f;
 		}
 		else if (player.iFrame == 3)
 		{
-			player.iFrame = 4;
+			player.updateFrame(4);
 			player.position.x = 380.0f;
 			player.position.y = 210.0f;
 		}
 		else if (player.iFrame == 2)
 		{
-			player.iFrame = 3;
+			player.updateFrame(3);
 			player.position.x = 360.0f;
 			player.position.y = 190.0f;
 		}
 		else if (player.iFrame == 1)
 		{
-			player.iFrame = 2;
+			player.updateFrame(2);
 			player.position.x = 340.0f;
 			player.position.y = 185.0f;
 		}
 		else if (player.iFrame == 0)
 		{
-			player.iFrame = 1;
+			player.updateFrame(1);
 			player.position.x = 320.0f;
 			player.position.y = 180.0f;
 		}
-		player.updateFrame();
 		player.lastTime = glfwGetTime();
 	}
 	if (player.iFrame == 5)
@@ -319,14 +307,11 @@ void movePlayer()
 void resetPositions()
 {
 	ball.position = vec3(400.0, 200.0, 0.0);
-	ball.iFrame = 0;
-	ball.updateFrame();
+	ball.updateFrame(0);
 	player.position = vec3(300.0, 175.0, 0.0);
-	player.iFrame = 0;
-	player.updateFrame();
+	player.updateFrame(0);
 	goalkeeper.position = vec3(400.0, 475.0, 0.0);
-	goalkeeper.iFrame = 0;
-	goalkeeper.updateFrame();
+	goalkeeper.updateFrame(0);
 	isPlayerShooting = false;
 	isPlayerSelectingTarget = false;
 	isVerticalArrowMoving = false;

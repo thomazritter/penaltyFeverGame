@@ -24,8 +24,9 @@ struct Sprite
     float lastTime;
 
     // Function to update the frame offset based on the current animation and frame
-    void updateFrame()
+    void updateFrame(int newFrame)
     {
+        iFrame = newFrame;
         offsetTex.s = iFrame * d.s;
         offsetTex.t = iAnimation * d.t;
     }
@@ -41,13 +42,12 @@ void Sprite::setupSprite(int texID, glm::vec3 position, glm::vec3 dimensions, in
     this->nAnimations = nAnimations;
     this->nFrames = nFrames;
     iAnimation = 0;
-    iFrame = 0;
 
     d.s = 1.0 / (float)nFrames;
     d.t = 1.0 / (float)nAnimations;
 
     // Initialize the texture offset for the first frame
-    updateFrame();
+    updateFrame(0);
     // Aqui setamos as coordenadas x, y e z do triângulo e as armazenamos de forma
     // sequencial, já visando mandar para o VBO (Vertex Buffer Objects)
     // Cada atributo do vértice (coordenada, cores, coordenadas de textura, normal, etc)
