@@ -135,66 +135,62 @@ void resetPositions()
     circleTimer = 0.0f;
 }
 
-void determineTarget()
+GoalSection determineGoalSection(Coordinates target)
 {
-    if (selectedKickTarget.x < goalLimits.leftBottom.x || selectedKickTarget.x > goalLimits.rightTop.x ||
-        selectedKickTarget.y < goalLimits.leftBottom.y || selectedKickTarget.y > goalLimits.rightTop.y)
+    if (target.x < goalLimits.leftBottom.x || target.x > goalLimits.rightTop.x ||
+        target.y < goalLimits.leftBottom.y || target.y > goalLimits.rightTop.y)
     {
-        // Out of bounds, set to default target
-        calculatedKickTarget.x = 1000.0f;
-        calculatedKickTarget.y = 1000.0f;
+        return OUTSIDE;
     }
-    else
+
+    float thirdX = (goalLimits.rightTop.x - goalLimits.leftBottom.x) / 3.0f;
+    float midY = (goalLimits.leftBottom.y + goalLimits.rightTop.y) / 2.0f;
+
+    if (target.x < goalLimits.leftBottom.x + thirdX)
     {
-
-        float thirdX = (goalLimits.rightTop.x - goalLimits.leftBottom.x) / 3.0f;
-        float midY = (goalLimits.leftBottom.y + goalLimits.rightTop.y) / 2.0f;
-
-        if (selectedKickTarget.x < goalLimits.leftBottom.x + thirdX)
+        if (target.y < midY)
         {
-            if (selectedKickTarget.y < midY)
-            {
-                // Bottom left corner
-                calculatedKickTarget.x = goalLimits.leftBottom.x + thirdX / 2.0f;
-                calculatedKickTarget.y = goalLimits.leftBottom.y + (midY - goalLimits.leftBottom.y) / 2.0f;
-            }
-            else
-            {
-                // Top left corner
-                calculatedKickTarget.x = goalLimits.leftBottom.x + thirdX / 2.0f;
-                calculatedKickTarget.y = goalLimits.rightTop.y - (goalLimits.rightTop.y - midY) / 2.0f;
-            }
-        }
-        else if (selectedKickTarget.x < goalLimits.leftBottom.x + 2 * thirdX)
-        {
-            if (selectedKickTarget.y < midY)
-            {
-                // Bottom middle
-                calculatedKickTarget.x = goalLimits.leftBottom.x + thirdX + thirdX / 2.0f;
-                calculatedKickTarget.y = goalLimits.leftBottom.y + (midY - goalLimits.leftBottom.y) / 2.0f;
-            }
-            else
-            {
-                // Top middle
-                calculatedKickTarget.x = goalLimits.leftBottom.x + thirdX + thirdX / 2.0f;
-                calculatedKickTarget.y = goalLimits.rightTop.y - (goalLimits.rightTop.y - midY) / 2.0f;
-            }
+            return LEFT_BOTTOM;
         }
         else
         {
-            if (selectedKickTarget.y < midY)
-            {
-                // Bottom right corner
-                calculatedKickTarget.x = goalLimits.leftBottom.x + 2 * thirdX + thirdX / 2.0f;
-                calculatedKickTarget.y = goalLimits.leftBottom.y + (midY - goalLimits.leftBottom.y) / 2.0f;
-            }
-            else
-            {
-                // Top right corner
-                calculatedKickTarget.x = goalLimits.leftBottom.x + 2 * thirdX + thirdX / 2.0f;
-                calculatedKickTarget.y = goalLimits.rightTop.y - (goalLimits.rightTop.y - midY) / 2.0f;
-            }
+            return LEFT_TOP;
         }
+    }
+    else if (target.x < goalLimits.leftBottom.x + 2 * thirdX)
+    {
+        if (target.y < midY)
+        {
+            return MIDDLE_BOTTOM;
+        }
+        else
+        {
+            return MIDDLE_TOP;
+        }
+    }
+    else
+    {
+        if (target.y < midY)
+        {
+            return RIGHT_BOTTOM;
+        }
+        else
+        {
+            return RIGHT_TOP;
+        }
+    }
+}
+
+bool isItGoal(GoalSection section)
+{
+    switch (section)
+    {
+    case OUTSIDE:
+        cout << "Chute para fora!" << endl;
+        return false;
+    default:
+        cout << "GOL!" << endl;
+        return true;
     }
 }
 
@@ -280,9 +276,8 @@ int main()
                     else
                     {
                         selectedKickTarget.y = verticalArrow.sprite.position.y;
-                        ball.sprite.lastTime = glfwGetTime();
                         isPlayerSelectingTarget = false;
-                        determineTarget();
+                        calculatedKickTarget = determineTargetSection(determineGoalSection(selectedKickTarget), goalLimits);
                         ball.totalBallDistance = sqrt(pow(calculatedKickTarget.x - ball.sprite.position.x, 2) +
                                                       pow(calculatedKickTarget.y - ball.sprite.position.y, 2));
                     }
@@ -329,6 +324,7 @@ int main()
                                 // If the goalkeeper's animation is complete, reset positions for the next shot
                                 if (isGoalkeeperAnimationComplete)
                                 {
+                                    isItGoal(determineGoalSection(calculatedKickTarget));
                                     resetPositions();
                                     isPlayerShooting = true;
                                     isPlayerSelectingTarget = true;
