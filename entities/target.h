@@ -13,6 +13,7 @@ public:
 	Target();
 	void setupSprite();
 	void selectRandomKickTarget(Coordinates &kickTarget, GoalLimits goalLimits);
+	void selectExactKick(Coordinates &kickTarget, GoalLimits goalLimits);
 };
 
 Target::Target() {}
@@ -30,6 +31,11 @@ void Target::selectRandomKickTarget(Coordinates &kickTarget, GoalLimits goalLimi
 	float randomY = randomFloat(goalLimits.leftBottom.y, goalLimits.rightTop.y);
 	kickTarget = {randomX, randomY};
 	sprite.position = glm::vec3(randomX, randomY, 0.0f);
+}
+
+void Target::selectExactKick(Coordinates &kickTarget, GoalLimits goalLimits)
+{
+	sprite.position = glm::vec3(kickTarget.x, kickTarget.y, 0.0f);
 }
 
 #endif // TARGET_H

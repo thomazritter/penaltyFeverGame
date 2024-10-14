@@ -86,6 +86,7 @@ bool mouseClickedOn(GLFWwindow *window, vec3 targetPos)
 
 	return sqrt(dx * dx + dy * dy) < 50.0f; // Raio de tolerância para defesa
 }
+
 void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
 {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
@@ -229,58 +230,39 @@ int main()
 			}
 			else
 			{
-				if (!isKickAnimationComplete)
+				if (!showTarget)
 				{
-					player.movePlayer(isKickAnimationComplete);
+					target.selectExactKick(kickTarget, goalLimits);
+					showTarget = true;
 				}
-				else
-				{
-					if (!isBallAnimationComplete)
-					{
-						ball.moveBall(isBallAnimationComplete, kickTarget);
-					}
-					else
-					{
-						resetPositions();
-						isPlayerShooting = false;
-					}
-				}
-			}
-		}
-		else
-		{
-			if (!showTarget)
-			{
-				target.selectRandomKickTarget(kickTarget, goalLimits);
-				showTarget = true;
-			}
 
-			// Mostra o círculo vermelho onde a bola irá
-			if (showTarget)
-			{
-				circleTimer += glfwGetTime();
-				if (circleTimer < circleDisplayTime)
+				// Mostra o círculo vermelho onde a bola irá
+				if (showTarget)
 				{
-					isKickAnimationComplete = false;
-					drawSprite(target.sprite, shaderID);
-				}
-				else
-				{
-					if (!isKickAnimationComplete)
+					circleTimer += glfwGetTime();
+					if (circleTimer < circleDisplayTime)
 					{
-						player.movePlayer(isKickAnimationComplete);
+						isKickAnimationComplete = false;
+						drawSprite(target.sprite, shaderID);
 					}
 					else
 					{
-						if (!isBallAnimationComplete)
+						if (!isKickAnimationComplete)
 						{
-							ball.moveBall(isBallAnimationComplete, kickTarget);
+							player.movePlayer(isKickAnimationComplete);
 						}
 						else
 						{
-							resetPositions();
-							isPlayerShooting = true;
-							isPlayerSelectingTarget = true;
+							if (!isBallAnimationComplete)
+							{
+								ball.moveBall(isBallAnimationComplete, kickTarget);
+							}
+							else
+							{
+								resetPositions();
+								isPlayerShooting = true;
+								isPlayerSelectingTarget = true;
+							}
 						}
 					}
 				}

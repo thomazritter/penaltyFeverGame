@@ -9,7 +9,7 @@ class Ball
 {
 public:
     Sprite sprite;
-    float ballSpeed = 75.0f;
+    float ballSpeed = 3.0f;
     float totalBallDistance = 0.0f;
     Ball();
     void setupSprite();
