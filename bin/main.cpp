@@ -278,8 +278,7 @@ int main()
                         selectedKickTarget.y = verticalArrow.sprite.position.y;
                         isPlayerSelectingTarget = false;
                         calculatedKickTarget = determineTargetSection(determineGoalSection(selectedKickTarget), goalLimits);
-                        ball.totalBallDistance = sqrt(pow(calculatedKickTarget.x - ball.sprite.position.x, 2) +
-                                                      pow(calculatedKickTarget.y - ball.sprite.position.y, 2));
+                        ball.setTarget(calculatedKickTarget);
                     }
                     wasSpacePressed = true;
                 }
@@ -314,7 +313,7 @@ int main()
                         {
                             if (!isBallAnimationComplete)
                             {
-                                ball.moveBall(isBallAnimationComplete, calculatedKickTarget);
+                                ball.moveBall(isBallAnimationComplete);
                             }
                             else
                             {

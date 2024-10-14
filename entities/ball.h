@@ -9,12 +9,16 @@ class Ball
 {
 public:
     Sprite sprite;
-    float ballSpeed = 3.0f;
-    float totalBallDistance = 0.0f;
+    float ballSpeed = 75.0f;
     Ball();
     void setupSprite();
-    void moveBall(bool &isBallAnimationComplete, Coordinates kickTarget);
+    void setTarget(Coordinates target);
+    void moveBall(bool &isBallAnimationComplete);
     void resetPositions();
+
+private:
+    Coordinates kickTarget;
+    float totalBallDistance = 0.0f;
 };
 
 Ball::Ball() {}
@@ -26,7 +30,7 @@ void Ball::setupSprite()
     sprite.setupSprite(ballTexture, glm::vec3(400.0, 200.0, 0.0), glm::vec3(imgWidth / 3.0 * 3.0, imgHeight * 2, 1.5), 3, 1);
 }
 
-void Ball::moveBall(bool &isBallAnimationComplete, Coordinates kickTarget)
+void Ball::moveBall(bool &isBallAnimationComplete)
 {
     // Calculate the total distance between the ball's current position and the target
     float dx = kickTarget.x - sprite.position.x;
@@ -71,6 +75,12 @@ void Ball::resetPositions()
 {
     sprite.position = glm::vec3(400.0, 200.0, 0.0);
     sprite.updateFrame(0);
+}
+
+void Ball::setTarget(Coordinates target)
+{
+    kickTarget = target;
+    totalBallDistance = sqrt(pow(kickTarget.x - sprite.position.x, 2) + pow(kickTarget.y - sprite.position.y, 2));
 }
 
 #endif
