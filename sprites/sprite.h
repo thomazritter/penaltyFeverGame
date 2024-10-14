@@ -9,7 +9,7 @@
 #include "../Dependencies/stb_image/stb_image.h"
 #include <iostream>
 
-#define BASE_PATH "c:/Users/Thomaz/Desktop/penaltyFeverGame"
+#define BASE_PATH "C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame"
 
 struct Sprite
 {
@@ -25,6 +25,7 @@ struct Sprite
     glm::vec2 offsetTex; // Offset in texture coordinates for the current frame
     float FPS;
     float lastTime;
+    bool isMirrored;
 
     // Function to update the frame offset based on the current animation and frame
     void updateFrame(int newFrame)
@@ -150,10 +151,13 @@ void drawSprite(Sprite &spr, GLuint shaderID)
     glm::mat4 model = glm::mat4(1);
     model = glm::translate(model, spr.position);
     model = glm::rotate(model, glm::radians(spr.angle), glm::vec3(0.0, 0.0, 1.0));
-    model = glm::scale(model, spr.dimensions);
+
+    // Apply mirroring if needed
+    glm::vec3 scale = spr.isMirrored ? glm::vec3(-spr.dimensions.x, spr.dimensions.y, 1.0f)
+                                     : spr.dimensions;
+    model = glm::scale(model, scale);
 
     glUniformMatrix4fv(glGetUniformLocation(shaderID, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
     glUniform2f(glGetUniformLocation(shaderID, "offsetTex"), spr.offsetTex.s, spr.offsetTex.t);
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

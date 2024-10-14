@@ -33,11 +33,6 @@ using namespace std;
 
 using namespace glm;
 
-GoalLimits goalLimits = {
-    {209.0f, 414.0f}, // leftBottom
-    {591.0f, 550.0f}  // rightTop
-};
-
 // Protótipo da função de callback de teclado
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
 
@@ -56,8 +51,7 @@ Arrow verticalArrow = Arrow(false);
 Target target;
 Background background;
 Goalkeeper goalkeeper;
-Scoreboard playerScoreboard;
-Scoreboard opponentScoreboard;
+Scoreboard scoreboard;
 
 // Controle para a seta de direção do chute
 bool isVerticalArrowMoving = false;
@@ -69,7 +63,9 @@ bool wasSpacePressed = false;
 bool isGoalkeeperAnimationComplete = false;
 
 Coordinates selectedKickTarget = {0.0f, 0.0f};
-Coordinates calculatedKickTarget = {0.0f, 0.0f};
+GoalSection playerKickSection = LEFT_BOTTOM;
+Coordinates goalkeeperTarget = {0.0f, 0.0f};
+GoalSection goalkeeperDefenseSection = LEFT_BOTTOM;
 
 bool showTarget = false;
 float circleDisplayTime = 360.0f;
@@ -135,6 +131,7 @@ void resetPositions()
     goalkeeper.resetPositions();
     isPlayerShooting = false;
     isPlayerSelectingTarget = false;
+    isGoalkeeperAnimationComplete = false;
     isVerticalArrowMoving = false;
     isKickAnimationComplete = false;
     isBallAnimationComplete = false;
@@ -142,62 +139,66 @@ void resetPositions()
     circleTimer = 0.0f;
 }
 
-GoalSection determineGoalSection(Coordinates target)
+bool isItGoal(GoalSection playerKickSection, GoalSection goalkeeperDefenseSection)
 {
-    if (target.x < goalLimits.leftBottom.x || target.x > goalLimits.rightTop.x ||
-        target.y < goalLimits.leftBottom.y || target.y > goalLimits.rightTop.y)
+    switch (playerKickSection)
     {
-        return OUTSIDE;
-    }
-
-    float thirdX = (goalLimits.rightTop.x - goalLimits.leftBottom.x) / 3.0f;
-    float midY = (goalLimits.leftBottom.y + goalLimits.rightTop.y) / 2.0f;
-
-    if (target.x < goalLimits.leftBottom.x + thirdX)
-    {
-        if (target.y < midY)
+    case LEFT_BOTTOM:
+        if (goalkeeperDefenseSection == LEFT_BOTTOM)
         {
-            return LEFT_BOTTOM;
+            return false;
         }
         else
         {
-            return LEFT_TOP;
+            return true;
         }
-    }
-    else if (target.x < goalLimits.leftBottom.x + 2 * thirdX)
-    {
-        if (target.y < midY)
+    case LEFT_TOP:
+        if (goalkeeperDefenseSection == LEFT_TOP)
         {
-            return MIDDLE_BOTTOM;
+            return false;
         }
         else
         {
-            return MIDDLE_TOP;
+            return true;
         }
-    }
-    else
-    {
-        if (target.y < midY)
+    case MIDDLE_BOTTOM:
+        if (goalkeeperDefenseSection == MIDDLE_BOTTOM)
         {
-            return RIGHT_BOTTOM;
+            return false;
         }
         else
         {
-            return RIGHT_TOP;
+            return true;
         }
-    }
-}
-
-bool isItGoal(GoalSection section)
-{
-    switch (section)
-    {
-    case OUTSIDE:
-        cout << "Chute para fora!" << endl;
-        return false;
+    case MIDDLE_TOP:
+        if (goalkeeperDefenseSection == MIDDLE_TOP)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    case RIGHT_BOTTOM:
+        if (goalkeeperDefenseSection == RIGHT_BOTTOM)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    case RIGHT_TOP:
+        if (goalkeeperDefenseSection == RIGHT_TOP)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
     default:
-        cout << "GOL!" << endl;
-        return true;
+        return false;
     }
 }
 
@@ -232,9 +233,7 @@ int main()
     horizontalArrow.setupSprite();
     verticalArrow.setupSprite();
     target.setupSprite();
-    playerScoreboard.setupSprite();
-    opponentScoreboard.setupSprite();
-    opponentScoreboard.sprite.position.x += 100.0f;
+    scoreboard.setupSprite();
 
     shaderID = setupShader();
     glUseProgram(shaderID);
@@ -256,11 +255,11 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         drawSprite(background.sprite, shaderID);
-        drawSprite(*goalkeeper.activeSprite, shaderID);
+        drawSprite(goalkeeper.sprite, shaderID);
         drawSprite(ball.sprite, shaderID);
         drawSprite(player.sprite, shaderID);
-        drawSprite(playerScoreboard.sprite, shaderID);
-        drawSprite(opponentScoreboard.sprite, shaderID);
+        drawSprite(scoreboard.playerScoreboardSprite, shaderID);
+        drawSprite(scoreboard.opponentScoreboardSprite, shaderID);
 
         if (isPlayerShooting)
         {
@@ -268,12 +267,12 @@ int main()
             {
                 if (!isVerticalArrowMoving)
                 {
-                    horizontalArrow.move(goalLimits);
+                    horizontalArrow.move();
                     drawSprite(horizontalArrow.sprite, shaderID);
                 }
                 else
                 {
-                    verticalArrow.move(goalLimits);
+                    verticalArrow.move();
                     drawSprite(verticalArrow.sprite, shaderID);
                     drawSprite(horizontalArrow.sprite, shaderID);
                 }
@@ -289,8 +288,11 @@ int main()
                     {
                         selectedKickTarget.y = verticalArrow.sprite.position.y;
                         isPlayerSelectingTarget = false;
-                        calculatedKickTarget = determineTargetSection(determineGoalSection(selectedKickTarget), goalLimits);
-                        ball.setTarget(calculatedKickTarget);
+                        playerKickSection = determineGoalSection(selectedKickTarget);
+                        goalkeeperTarget = selectRandomTargetInsideGoal();
+                        goalkeeperDefenseSection = determineGoalSection(goalkeeperTarget);
+                        goalkeeper.defineTargetBySection(goalkeeperDefenseSection);
+                        ball.setTarget(playerKickSection);
                     }
                     wasSpacePressed = true;
                 }
@@ -303,7 +305,7 @@ int main()
             {
                 if (!showTarget)
                 {
-                    target.selectExactKick(calculatedKickTarget, goalLimits);
+                    target.setTargetBySection(goalkeeperDefenseSection);
                     showTarget = true;
                 }
 
@@ -323,24 +325,18 @@ int main()
                         }
                         else
                         {
-                            if (!isBallAnimationComplete)
+                            if (!isBallAnimationComplete || !isGoalkeeperAnimationComplete)
                             {
                                 ball.moveBall(isBallAnimationComplete);
+                                goalkeeper.moveGoalkeeper(isGoalkeeperAnimationComplete);
                             }
                             else
                             {
-                                // Animate goalkeeper's defense attempt
-                                goalkeeper.moveGoalkeeper(isGoalkeeperAnimationComplete, goalLimits);
 
-                                // If the goalkeeper's animation is complete, reset positions for the next shot
-                                if (isGoalkeeperAnimationComplete)
-                                {
-                                    playerScored = isItGoal(determineGoalSection(calculatedKickTarget));
-                                    resetPositions();
-                                    isPlayerShooting = true;
-                                    isPlayerSelectingTarget = true;
-                                    isGoalkeeperAnimationComplete = false; // Reset flag
-                                }
+                                playerScored = isItGoal(playerKickSection, goalkeeperDefenseSection);
+                                resetPositions();
+                                isPlayerShooting = true;
+                                isPlayerSelectingTarget = true;
                             }
                         }
                     }
@@ -351,7 +347,7 @@ int main()
         {
             playerScore++;
             playerScored = false;
-            playerScoreboard.sprite.updateFrame(playerScore);
+            scoreboard.setupPlayerScore(playerScore);
         }
         glfwSwapBuffers(window);
     }

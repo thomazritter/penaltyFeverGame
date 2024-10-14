@@ -12,8 +12,8 @@ public:
 
 	Target();
 	void setupSprite();
-	void selectRandomKickTarget(Coordinates &kickTarget, GoalLimits goalLimits);
-	void selectExactKick(Coordinates &kickTarget, GoalLimits goalLimits);
+	void setTarget(Coordinates kickTarget);
+	void setTargetBySection(GoalSection section);
 };
 
 Target::Target() {}
@@ -25,17 +25,15 @@ void Target::setupSprite()
 	sprite.setupSprite(redCircleTexture, glm::vec3(600.0, 0.0, 0.0), glm::vec3(imgWidth * 5.0f, imgHeight * 5.0f, 1.0), 1, 1);
 }
 
-void Target::selectRandomKickTarget(Coordinates &kickTarget, GoalLimits goalLimits)
-{
-	float randomX = randomFloat(goalLimits.leftBottom.x, goalLimits.rightTop.x);
-	float randomY = randomFloat(goalLimits.leftBottom.y, goalLimits.rightTop.y);
-	kickTarget = {randomX, randomY};
-	sprite.position = glm::vec3(randomX, randomY, 0.0f);
-}
-
-void Target::selectExactKick(Coordinates &kickTarget, GoalLimits goalLimits)
+void Target::setTarget(Coordinates kickTarget)
 {
 	sprite.position = glm::vec3(kickTarget.x, kickTarget.y, 0.0f);
 }
 
-#endif // TARGET_H
+void Target::setTargetBySection(GoalSection section)
+{
+	Coordinates target = determineTargetCoordinates(section);
+	sprite.position = glm::vec3(target.x, target.y, 0.0f);
+}
+
+#endif

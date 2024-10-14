@@ -9,46 +9,32 @@
 class Goalkeeper
 {
 public:
-    Sprite spriteLeft;          // Sprite for left-side defense
-    Sprite spriteRight;         // Sprite for right-side defense
-    Sprite* activeSprite;       // Pointer to the currently active sprite
-    glm::vec3 targetPosition;   // Target position within goal limits
-    float moveSpeed = 3.0f;
-    float totalMoveDistance = 0.0f;
-    int defenseType = 0;        // 0: Left Corner, 1: Right Corner, 2: Up
+    Sprite sprite;
+    Coordinates defenseTarget;
 
     Goalkeeper();
     void setupSprite();
-    void moveGoalkeeper(bool &isGoalkeeperAnimationComplete, GoalLimits goalLimits);
+    void moveGoalkeeper(bool &isGoalkeeperAnimationComplete);
     void resetPositions();
-    float randomFloat(float min, float max);
-    int chooseDefenseType();    // Chooses defense type randomly
+    int chooseDefenseType(); // Chooses defense type randomly
+    void defineTargetBySection(GoalSection section);
+
+private:
+    vector<Coordinates> jumpParabola;
+    void calculateJumpParabola(Coordinates jumpTarget);
+    int parabolaPosition = 0;
+    Coordinates startCoordinates = {400.0, 475.0};
 };
 
-Goalkeeper::Goalkeeper() : activeSprite(&spriteLeft) {}
+Goalkeeper::Goalkeeper() {}
 
 void Goalkeeper::setupSprite()
 {
     int imgWidth, imgHeight = 0;
 
     // Load left-side texture (movement.png)
-    int goalkeeperTextureLeft = loadTexture("/sprites/goalkeeper/movement.png", imgWidth, imgHeight);
-    spriteLeft.setupSprite(goalkeeperTextureLeft, glm::vec3(400.0, 475.0, 0.0), glm::vec3(imgWidth / 3, imgHeight * 3.0, 1.0), 7, 1);
-
-    // Load right-side texture (movement2.png)
-    int goalkeeperTextureRight = loadTexture("/sprites/goalkeeper/movement2.png", imgWidth, imgHeight);
-    spriteRight.setupSprite(goalkeeperTextureRight, glm::vec3(400.0, 475.0, 0.0), glm::vec3(imgWidth / 3, imgHeight * 3.0, 1.0), 7, 1);
-
-    // Set initial active sprite to left-side defense
-    activeSprite = &spriteLeft;
-}
-
-float Goalkeeper::randomFloat(float min, float max)
-{
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(min, max);
-    return static_cast<float>(dis(gen));
+    int goalkeeperTexture = loadTexture("/sprites/goalkeeper/movement.png", imgWidth, imgHeight);
+    sprite.setupSprite(goalkeeperTexture, glm::vec3(400.0, 475.0, 0.0), glm::vec3(imgWidth / 3, imgHeight * 3.0, 1.0), 7, 1);
 }
 
 // Choose defense type (0 = Left Bottom, 1 = Right Bottom, 2 = Up)
@@ -60,118 +46,115 @@ int Goalkeeper::chooseDefenseType()
     return dis(gen);
 }
 
-void Goalkeeper::moveGoalkeeper(bool &isGoalkeeperAnimationComplete, GoalLimits goalLimits)
+void Goalkeeper::moveGoalkeeper(bool &isGoalkeeperAnimationComplete)
 {
-    static const float idleYPosition = spriteLeft.position.y; // Fixed Y position for animations
-
-    // Choose a random defense type if no target set
-    if (totalMoveDistance == 0.0f)
+    GoalSection defenseSection = determineGoalSection(defenseTarget);
+    float currentTime = glfwGetTime();
+    float deltaTime = currentTime - sprite.lastTime;
+    if (defenseSection == MIDDLE_BOTTOM)
     {
-        defenseType = chooseDefenseType();
-
-        // Set the target position based on defense type
-        if (defenseType == 0) // Left Corner Bottom
-        {
-            targetPosition = glm::vec3(goalLimits.leftBottom.x, idleYPosition, spriteLeft.position.z);
-            activeSprite = &spriteLeft;  // Use left-side texture
-        }
-        else if (defenseType == 1) // Right Corner Bottom
-        {
-            targetPosition = glm::vec3(goalLimits.rightTop.x, idleYPosition, spriteRight.position.z);
-            activeSprite = &spriteRight; // Use right-side texture
-        }
-        else if (defenseType == 2) // Up (Center High)
-        {
-            targetPosition = glm::vec3((goalLimits.leftBottom.x + goalLimits.rightTop.x) / 2.0f, goalLimits.rightTop.y, spriteLeft.position.z);
-            activeSprite = &spriteLeft;  // Use left-side texture for up defense
-        }
-
-        // Calculate total distance to target for animation
-        totalMoveDistance = glm::distance(activeSprite->position, targetPosition);
+        sprite.position.x = defenseTarget.x;
+        sprite.position.y = defenseTarget.y;
+        isGoalkeeperAnimationComplete = true;
     }
-
-    // Calculate direction and distance to target
-    float dx = targetPosition.x - activeSprite->position.x;
-    float dy = targetPosition.y - activeSprite->position.y;
-    float distance = sqrt(dx * dx + dy * dy);
-
-    // Move toward the target if not close enough
-    if (distance > 3.0f)
+    else if (defenseSection == MIDDLE_TOP)
     {
-        // Normalize direction
-        float directionX = dx / distance;
-        float directionY = dy / distance;
-
-        // Move goalkeeper by a fixed step size
-        float stepSize = moveSpeed * 0.032f; // Assuming ~60 FPS
-        activeSprite->position.x += directionX * stepSize;
-        activeSprite->position.y += directionY * stepSize;
-
-        // Update animation frame based on remaining distance
-        if (defenseType == 2) // Upward jump (single frame)
-        {
-            activeSprite->updateFrame(1); // Upward jump frame
-        }
-        else if (defenseType == 0) // Left Bottom
-        {
-            if (distance < totalMoveDistance / 3)
-            {
-                activeSprite->updateFrame(4); // Final frame for left bottom defense
-            }
-            else if (distance < totalMoveDistance / 3 * 2)
-            {
-                activeSprite->updateFrame(3); // Midway frame for left bottom defense
-            }
-            else
-            {
-                activeSprite->updateFrame(2); // Initial frame for left bottom defense
-            }
-        }
-        else if (defenseType == 1) // Right Bottom
-        {
-            if (distance < totalMoveDistance / 3)
-            {
-                activeSprite->updateFrame(2); // Final frame for right bottom defense
-            }
-            else if (distance < totalMoveDistance / 3 * 2)
-            {
-                activeSprite->updateFrame(3); // Midway frame for right bottom defense
-            }
-            else
-            {
-                activeSprite->updateFrame(4); // Initial frame for right bottom defense
-            }
-        }
+        sprite.updateFrame(1);
+        isGoalkeeperAnimationComplete = true;
     }
     else
     {
-        // Reached target position, reset to idle and mark complete
-        activeSprite->position = glm::vec3(activeSprite->position.x, idleYPosition, activeSprite->position.z); // Reset to fixed Y
-        if (defenseType == 1)
-            activeSprite->updateFrame(6); // Idle frame for right defense
-        else
-            activeSprite->updateFrame(0); // Idle frame for left defense
+        sprite.isMirrored = defenseSection == LEFT_BOTTOM || defenseSection == LEFT_TOP ? false : true;
+        if (deltaTime >= 0.5f / sprite.FPS)
+        {
+            if (parabolaPosition < jumpParabola.size())
+            {
+                if (parabolaPosition > 4 * jumpParabola.size() / 5)
+                {
+                    sprite.updateFrame(6);
+                }
+                else if (parabolaPosition > 3 * jumpParabola.size() / 5)
+                {
+                    sprite.updateFrame(5);
+                }
+                else if (parabolaPosition > 2 * jumpParabola.size() / 5)
+                {
+                    sprite.updateFrame(4);
+                }
+                else if (parabolaPosition > jumpParabola.size() / 5)
+                {
+                    sprite.updateFrame(3);
+                }
+                else
+                {
+                    sprite.updateFrame(2);
+                }
 
-        isGoalkeeperAnimationComplete = true;
-        totalMoveDistance = 0.0f; // Reset for the next move
+                sprite.position.x = jumpParabola[parabolaPosition].x;
+                sprite.position.y = jumpParabola[parabolaPosition].y;
+                parabolaPosition++;
+            }
+            else
+            {
+                isGoalkeeperAnimationComplete = true;
+            }
+            sprite.lastTime = currentTime;
+        }
     }
 }
 
 void Goalkeeper::resetPositions()
 {
-    spriteLeft.position = glm::vec3(400.0, 475.0, 0.0);
-    spriteRight.position = glm::vec3(400.0, 475.0, 0.0);
+    sprite.position = glm::vec3(400.0, 475.0, 0.0);
+    jumpParabola.clear();
+    parabolaPosition = 0;
+    sprite.updateFrame(0); // Idle frame for left-side texture (movement.png)
+}
 
-    if (activeSprite == &spriteLeft)
+void Goalkeeper::defineTargetBySection(GoalSection section)
+{
+    Coordinates finalTarget = determineTargetCoordinates(section);
+
+    defenseTarget = finalTarget;
+
+    if (section != MIDDLE_BOTTOM && section != MIDDLE_TOP)
     {
-        activeSprite->updateFrame(0); // Idle frame for left-side texture (movement.png)
+        calculateJumpParabola(finalTarget);
     }
-    else if (activeSprite == &spriteRight)
+}
+
+void Goalkeeper::calculateJumpParabola(Coordinates jumpTarget)
+{
+    // Calculate the distance between startCoordinates and the roots
+    float distance = jumpTarget.x - startCoordinates.x;
+    float root1 = startCoordinates.x;
+    float root2 = jumpTarget.x + distance;
+
+    // A negative value for 'a' makes the parabola open downwards
+    float a = -0.0015;
+
+    // Calculate parabola points
+    int steps = sprite.FPS; // Number of steps for smoothness
+    float increment = distance / steps;
+
+    if (jumpTarget.x > startCoordinates.x)
     {
-        activeSprite->updateFrame(6); // Idle frame for right-side texture (movement2.png)
+        for (float x = root1; x <= root2; x += increment)
+        {
+            // Use the vertex form of the parabola
+            float y = a * (x - root1) * (x - root2) + startCoordinates.y;
+            jumpParabola.push_back({x, y});
+        }
     }
-    
-    totalMoveDistance = 0.0f;
+    else
+    {
+        // The jump can also go in the negative direction (i.e., x < startCoordinates.x)
+        for (float x = root1; x >= root2; x += increment)
+        {
+            float y = a * (x - root1) * (x - root2) + startCoordinates.y;
+            jumpParabola.push_back({x, y});
+        }
+    }
 }
 
 #endif

@@ -9,16 +9,16 @@ class Ball
 {
 public:
     Sprite sprite;
-    float ballSpeed = 75.0f;
     Ball();
     void setupSprite();
-    void setTarget(Coordinates target);
+    void setTarget(GoalSection section);
     void moveBall(bool &isBallAnimationComplete);
     void resetPositions();
 
 private:
     Coordinates kickTarget;
     float totalBallDistance = 0.0f;
+    float ballSpeed;
 };
 
 Ball::Ball() {}
@@ -32,42 +32,50 @@ void Ball::setupSprite()
 
 void Ball::moveBall(bool &isBallAnimationComplete)
 {
-    // Calculate the total distance between the ball's current position and the target
-    float dx = kickTarget.x - sprite.position.x;
-    float dy = kickTarget.y - sprite.position.y;
-    float distance = sqrt(dx * dx + dy * dy); // Hypotenuse
+    float currentTime = glfwGetTime();
+    float deltaTime = currentTime - sprite.lastTime;
 
-    // Only move the ball if the distance is greater than a small threshold
-    if (distance > 3.0f)
+    if (deltaTime >= 0.5f / sprite.FPS) // Update sprite each 0.5 seconds
     {
-        // Normalize the direction vector by dividing by the distance (hypotenuse)
-        float directionX = dx / distance;
-        float directionY = dy / distance;
+        // Calculate the total distance between the ball's current position and the target
+        float dx = kickTarget.x - sprite.position.x;
+        float dy = kickTarget.y - sprite.position.y;
+        float distance = sqrt(dx * dx + dy * dy); // Hypotenuse
 
-        // Move the ball by a fixed step size
-        float stepSize = ballSpeed * 0.032f; // Assuming a constant frame time of 16ms (~60 FPS)
-        sprite.position.x += directionX * stepSize;
-        sprite.position.y += directionY * stepSize;
+        // Only move the ball if the distance is greater than a small threshold
+        if (distance > ballSpeed)
+        {
+            // Normalize the direction vector by dividing by the distance (hypotenuse)
+            float directionX = dx / distance;
+            float directionY = dy / distance;
 
-        // Update the animation frame based on the distance traveled
-        if (distance < totalBallDistance / 3)
-        {
-            sprite.updateFrame(2);
-        }
-        else if (distance < totalBallDistance / 3 * 2)
-        {
-            sprite.updateFrame(1);
+            // Move the ball by a fixed step size
+            float stepSize = ballSpeed; // Assuming a constant frame time of 16ms (~60 FPS)
+            sprite.position.x += directionX * stepSize;
+            sprite.position.y += directionY * stepSize;
+
+            // Update the animation frame based on the distance traveled
+            if (distance < totalBallDistance / 3)
+            {
+                sprite.updateFrame(2);
+            }
+            else if (distance < totalBallDistance / 3 * 2)
+            {
+                sprite.updateFrame(1);
+            }
+            else
+            {
+                sprite.updateFrame(0);
+            }
         }
         else
         {
-            sprite.updateFrame(0);
+            sprite.position.x = kickTarget.x;
+            sprite.position.y = kickTarget.y;
+            isBallAnimationComplete = true;
         }
-    }
-    else
-    {
-        sprite.position.x = kickTarget.x;
-        sprite.position.y = kickTarget.y;
-        isBallAnimationComplete = true;
+
+        sprite.lastTime = currentTime;
     }
 }
 
@@ -77,10 +85,11 @@ void Ball::resetPositions()
     sprite.updateFrame(0);
 }
 
-void Ball::setTarget(Coordinates target)
+void Ball::setTarget(GoalSection section)
 {
-    kickTarget = target;
+    kickTarget = determineTargetCoordinates(section);
     totalBallDistance = sqrt(pow(kickTarget.x - sprite.position.x, 2) + pow(kickTarget.y - sprite.position.y, 2));
+    ballSpeed = totalBallDistance / (sprite.FPS * 2); // 24 steps to reach the target
 }
 
 #endif

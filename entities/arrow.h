@@ -9,13 +9,13 @@ class Arrow
 {
 public:
     Sprite sprite;
-    float arrowSpeed = 0.2f;
+    float arrowSpeed = 4.5f;
     bool isHorizontal;
     bool isMovingRightOrUp = true;
 
     Arrow(bool isHorizontal);
     void setupSprite();
-    void move(GoalLimits goalLimits);
+    void move();
     void resetPositions();
 };
 
@@ -46,7 +46,7 @@ void Arrow::resetPositions()
     sprite.updateFrame(0);
 }
 
-void Arrow::move(GoalLimits goalLimits)
+void Arrow::move()
 {
     if (isHorizontal)
     {
