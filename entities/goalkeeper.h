@@ -9,28 +9,38 @@
 class Goalkeeper
 {
 public:
-    Sprite sprite;
-    glm::vec3 targetPosition;  // Target position within goal limits
+    Sprite spriteLeft;          // Sprite for left-side defense
+    Sprite spriteRight;         // Sprite for right-side defense
+    Sprite* activeSprite;       // Pointer to the currently active sprite
+    glm::vec3 targetPosition;   // Target position within goal limits
     float moveSpeed = 3.0f;
     float totalMoveDistance = 0.0f;
-    int currentFrameIndex = 0;
-    int defenseType = 0;       // 0: Left Corner, 1: Right Corner, 2: Up
+    int defenseType = 0;        // 0: Left Corner, 1: Right Corner, 2: Up
 
     Goalkeeper();
     void setupSprite();
     void moveGoalkeeper(bool &isGoalkeeperAnimationComplete, GoalLimits goalLimits);
     void resetPositions();
     float randomFloat(float min, float max);
-    int chooseDefenseType(); // Chooses defense type randomly
+    int chooseDefenseType();    // Chooses defense type randomly
 };
 
-Goalkeeper::Goalkeeper() {}
+Goalkeeper::Goalkeeper() : activeSprite(&spriteLeft) {}
 
 void Goalkeeper::setupSprite()
 {
     int imgWidth, imgHeight = 0;
-    int goalkeeperTexture = loadTexture("/sprites/goalkeeper/movement.png", imgWidth, imgHeight);
-    sprite.setupSprite(goalkeeperTexture, glm::vec3(400.0, 475.0, 0.0), glm::vec3(imgWidth / 3, imgHeight * 3.0, 1.0), 7, 1);
+
+    // Load left-side texture (movement.png)
+    int goalkeeperTextureLeft = loadTexture("/sprites/goalkeeper/movement.png", imgWidth, imgHeight);
+    spriteLeft.setupSprite(goalkeeperTextureLeft, glm::vec3(400.0, 475.0, 0.0), glm::vec3(imgWidth / 3, imgHeight * 3.0, 1.0), 7, 1);
+
+    // Load right-side texture (movement2.png)
+    int goalkeeperTextureRight = loadTexture("/sprites/goalkeeper/movement2.png", imgWidth, imgHeight);
+    spriteRight.setupSprite(goalkeeperTextureRight, glm::vec3(400.0, 475.0, 0.0), glm::vec3(imgWidth / 3, imgHeight * 3.0, 1.0), 7, 1);
+
+    // Set initial active sprite to left-side defense
+    activeSprite = &spriteLeft;
 }
 
 float Goalkeeper::randomFloat(float min, float max)
@@ -52,37 +62,37 @@ int Goalkeeper::chooseDefenseType()
 
 void Goalkeeper::moveGoalkeeper(bool &isGoalkeeperAnimationComplete, GoalLimits goalLimits)
 {
-    static const float idleYPosition = sprite.position.y; // Fixed Y position for animations
+    static const float idleYPosition = spriteLeft.position.y; // Fixed Y position for animations
 
     // Choose a random defense type if no target set
     if (totalMoveDistance == 0.0f)
     {
         defenseType = chooseDefenseType();
 
-        // Set the target position based on defense type, keeping Y consistent for side defenses
+        // Set the target position based on defense type
         if (defenseType == 0) // Left Corner Bottom
         {
-            targetPosition = glm::vec3(goalLimits.leftBottom.x, idleYPosition, sprite.position.z);
-            currentFrameIndex = 2; // Start with frame 2 for bottom defense
+            targetPosition = glm::vec3(goalLimits.leftBottom.x, idleYPosition, spriteLeft.position.z);
+            activeSprite = &spriteLeft;  // Use left-side texture
         }
         else if (defenseType == 1) // Right Corner Bottom
         {
-            targetPosition = glm::vec3(goalLimits.rightTop.x, idleYPosition, sprite.position.z);
-            currentFrameIndex = 2; // Start with frame 2 for bottom defense
+            targetPosition = glm::vec3(goalLimits.rightTop.x, idleYPosition, spriteRight.position.z);
+            activeSprite = &spriteRight; // Use right-side texture
         }
         else if (defenseType == 2) // Up (Center High)
         {
-            targetPosition = glm::vec3((goalLimits.leftBottom.x + goalLimits.rightTop.x) / 2.0f, goalLimits.rightTop.y, sprite.position.z);
-            currentFrameIndex = 1; // Start with frame 1 for upward jump
+            targetPosition = glm::vec3((goalLimits.leftBottom.x + goalLimits.rightTop.x) / 2.0f, goalLimits.rightTop.y, spriteLeft.position.z);
+            activeSprite = &spriteLeft;  // Use left-side texture for up defense
         }
 
         // Calculate total distance to target for animation
-        totalMoveDistance = glm::distance(sprite.position, targetPosition);
+        totalMoveDistance = glm::distance(activeSprite->position, targetPosition);
     }
 
     // Calculate direction and distance to target
-    float dx = targetPosition.x - sprite.position.x;
-    float dy = targetPosition.y - sprite.position.y;
+    float dx = targetPosition.x - activeSprite->position.x;
+    float dy = targetPosition.y - activeSprite->position.y;
     float distance = sqrt(dx * dx + dy * dy);
 
     // Move toward the target if not close enough
@@ -94,47 +104,74 @@ void Goalkeeper::moveGoalkeeper(bool &isGoalkeeperAnimationComplete, GoalLimits 
 
         // Move goalkeeper by a fixed step size
         float stepSize = moveSpeed * 0.032f; // Assuming ~60 FPS
-        sprite.position.x += directionX * stepSize;
-        sprite.position.y += directionY * stepSize;
+        activeSprite->position.x += directionX * stepSize;
+        activeSprite->position.y += directionY * stepSize;
 
         // Update animation frame based on remaining distance
         if (defenseType == 2) // Upward jump (single frame)
         {
-            sprite.updateFrame(1); // Upward jump frame
+            activeSprite->updateFrame(1); // Upward jump frame
         }
-        else // Left or Right Bottom
+        else if (defenseType == 0) // Left Bottom
         {
             if (distance < totalMoveDistance / 3)
             {
-                sprite.updateFrame(4); // Final frame for bottom defense
+                activeSprite->updateFrame(4); // Final frame for left bottom defense
             }
             else if (distance < totalMoveDistance / 3 * 2)
             {
-                sprite.updateFrame(3); // Midway frame for bottom defense
+                activeSprite->updateFrame(3); // Midway frame for left bottom defense
             }
             else
             {
-                sprite.updateFrame(2); // Initial movement frame for bottom defense
+                activeSprite->updateFrame(2); // Initial frame for left bottom defense
+            }
+        }
+        else if (defenseType == 1) // Right Bottom
+        {
+            if (distance < totalMoveDistance / 3)
+            {
+                activeSprite->updateFrame(2); // Final frame for right bottom defense
+            }
+            else if (distance < totalMoveDistance / 3 * 2)
+            {
+                activeSprite->updateFrame(3); // Midway frame for right bottom defense
+            }
+            else
+            {
+                activeSprite->updateFrame(4); // Initial frame for right bottom defense
             }
         }
     }
     else
     {
         // Reached target position, reset to idle and mark complete
-        sprite.position = glm::vec3(sprite.position.x, idleYPosition, sprite.position.z); // Reset to fixed Y
-        sprite.updateFrame(0); // Idle frame
+        activeSprite->position = glm::vec3(activeSprite->position.x, idleYPosition, activeSprite->position.z); // Reset to fixed Y
+        if (defenseType == 1)
+            activeSprite->updateFrame(6); // Idle frame for right defense
+        else
+            activeSprite->updateFrame(0); // Idle frame for left defense
+
         isGoalkeeperAnimationComplete = true;
         totalMoveDistance = 0.0f; // Reset for the next move
     }
 }
 
-
 void Goalkeeper::resetPositions()
 {
-    sprite.position = glm::vec3(400.0, 475.0, 0.0);
-    sprite.updateFrame(0);
+    spriteLeft.position = glm::vec3(400.0, 475.0, 0.0);
+    spriteRight.position = glm::vec3(400.0, 475.0, 0.0);
+
+    if (activeSprite == &spriteLeft)
+    {
+        activeSprite->updateFrame(0); // Idle frame for left-side texture (movement.png)
+    }
+    else if (activeSprite == &spriteRight)
+    {
+        activeSprite->updateFrame(6); // Idle frame for right-side texture (movement2.png)
+    }
+    
     totalMoveDistance = 0.0f;
-    currentFrameIndex = 0;
 }
 
 #endif

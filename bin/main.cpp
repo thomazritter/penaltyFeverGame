@@ -188,7 +188,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         drawSprite(background.sprite, shaderID);
-        drawSprite(goalkeeper.sprite, shaderID);
+        drawSprite(*goalkeeper.activeSprite, shaderID);
         drawSprite(ball.sprite, shaderID);
         drawSprite(player.sprite, shaderID);
 

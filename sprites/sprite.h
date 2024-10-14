@@ -15,6 +15,7 @@ struct Sprite
 {
     GLuint VAO;
     GLuint texID;
+    glm::vec3 size;
     glm::vec3 position;
     glm::vec3 dimensions;
     float angle;
