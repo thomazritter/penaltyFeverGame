@@ -68,7 +68,8 @@ Coordinates goalkeeperTarget = {0.0f, 0.0f};
 GoalSection goalkeeperDefenseSection = LEFT_BOTTOM;
 
 bool showTarget = false;
-float circleDisplayTime = 360.0f;
+bool playerHasSelectedDefenseTarget = false;
+float circleDisplayTime = 5.0f;
 float circleTimer = 0.0f;
 
 // Resultado do chute
@@ -79,20 +80,10 @@ bool playerDefended = false;
 int playerScore = 0;
 int opponentScore = 0;
 
-bool mouseClickedOn(GLFWwindow *window, vec3 targetPos)
+Coordinates getMouseClickCoordinates(GLFWwindow *window)
 {
-    double mouseX, mouseY;
-    glfwGetCursorPos(window, &mouseX, &mouseY);
-
-    float dx = mouseX - targetPos.x;
-    float dy = HEIGHT - mouseY - targetPos.y;
-
-    return sqrt(dx * dx + dy * dy) < 50.0f; // Raio de tolerância para defesa
-}
-
-void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
-{
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    Coordinates clickCoordinates = {0.0, 0.0};
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
     {
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
@@ -102,14 +93,12 @@ void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
         glfwGetWindowSize(window, &windowWidth, &windowHeight);
         ypos = windowHeight - ypos;
 
+        clickCoordinates.x = xpos;
+        clickCoordinates.y = ypos;
+
         std::cout << "Mouse clicked at: (" << xpos << ", " << ypos << ")" << std::endl;
     }
-}
-
-// Function to set up the mouse click callback
-void setupMouseClickLogging(GLFWwindow *window)
-{
-    glfwSetMouseButtonCallback(window, mouseButtonCallback);
+    return clickCoordinates;
 }
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode)
@@ -129,9 +118,12 @@ void resetPositions()
     ball.resetPositions();
     player.resetPositions();
     goalkeeper.resetPositions();
+    goalkeeperDefenseSection = GoalSection::MIDDLE_BOTTOM;
+    goalkeeper.defineTargetBySection(goalkeeperDefenseSection);
     isPlayerShooting = false;
     isPlayerSelectingTarget = false;
     isGoalkeeperAnimationComplete = false;
+    playerHasSelectedDefenseTarget = false;
     isVerticalArrowMoving = false;
     isKickAnimationComplete = false;
     isBallAnimationComplete = false;
@@ -244,8 +236,6 @@ int main()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
-    // Set up mouse click logging
-    setupMouseClickLogging(window);
     glDepthFunc(GL_ALWAYS);
 
     while (!glfwWindowShouldClose(window))
@@ -293,6 +283,7 @@ int main()
                         goalkeeperDefenseSection = determineGoalSection(goalkeeperTarget);
                         goalkeeper.defineTargetBySection(goalkeeperDefenseSection);
                         ball.setTarget(playerKickSection);
+                        isKickAnimationComplete = false;
                     }
                     wasSpacePressed = true;
                 }
@@ -303,52 +294,90 @@ int main()
             }
             else
             {
-                if (!showTarget)
-                {
-                    target.setTargetBySection(goalkeeperDefenseSection);
-                    showTarget = true;
-                }
 
-                if (showTarget)
+                if (!isKickAnimationComplete)
                 {
-                    circleTimer += glfwGetTime();
-                    if (circleTimer < circleDisplayTime)
+                    player.movePlayer(isKickAnimationComplete);
+                }
+                else
+                {
+                    if (!isBallAnimationComplete || !isGoalkeeperAnimationComplete)
                     {
-                        isKickAnimationComplete = false;
-                        drawSprite(target.sprite, shaderID);
+                        ball.moveBall(isBallAnimationComplete);
+                        goalkeeper.moveGoalkeeper(isGoalkeeperAnimationComplete);
                     }
                     else
                     {
-                        if (!isKickAnimationComplete)
-                        {
-                            player.movePlayer(isKickAnimationComplete);
-                        }
-                        else
-                        {
-                            if (!isBallAnimationComplete || !isGoalkeeperAnimationComplete)
-                            {
-                                ball.moveBall(isBallAnimationComplete);
-                                goalkeeper.moveGoalkeeper(isGoalkeeperAnimationComplete);
-                            }
-                            else
-                            {
 
-                                playerScored = isItGoal(playerKickSection, goalkeeperDefenseSection);
-                                resetPositions();
-                                isPlayerShooting = true;
-                                isPlayerSelectingTarget = true;
-                            }
+                        playerScored = isItGoal(playerKickSection, goalkeeperDefenseSection);
+                        if (playerScored)
+                        {
+                            playerScore++;
+                            playerScored = false;
+                            scoreboard.setupPlayerScore(playerScore);
                         }
+                        resetPositions();
+                        isPlayerShooting = false;
                     }
                 }
             }
         }
-        if (playerScored)
+        else
         {
-            playerScore++;
-            playerScored = false;
-            scoreboard.setupPlayerScore(playerScore);
+            if (!playerHasSelectedDefenseTarget && !isKickAnimationComplete)
+            {
+                goalkeeperTarget = getMouseClickCoordinates(window);
+                if (determineGoalSection(goalkeeperTarget) != OUTSIDE)
+                {
+                    playerHasSelectedDefenseTarget = true;
+                    goalkeeperDefenseSection = determineGoalSection(goalkeeperTarget);
+                    goalkeeper.defineTargetBySection(goalkeeperDefenseSection);
+                }
+            }
+            if (!showTarget)
+            {
+                selectedKickTarget = selectRandomTargetAnywhere();
+                playerKickSection = determineGoalSection(selectedKickTarget);
+                ball.setTarget(playerKickSection);
+                target.setTargetBySection(playerKickSection);
+                showTarget = true;
+                isKickAnimationComplete = false;
+            }
+            else
+            {
+                circleTimer += 1.0f;
+                if (circleTimer <= circleDisplayTime)
+                {
+                    drawSprite(target.sprite, shaderID);
+                }
+                if (!isKickAnimationComplete)
+                {
+                    player.movePlayer(isKickAnimationComplete);
+                }
+                else
+                {
+                    if (!isBallAnimationComplete || !isGoalkeeperAnimationComplete)
+                    {
+                        ball.moveBall(isBallAnimationComplete);
+                        goalkeeper.moveGoalkeeper(isGoalkeeperAnimationComplete);
+                    }
+                    else
+                    {
+                        playerScored = isItGoal(playerKickSection, goalkeeperDefenseSection);
+                        if (playerScored)
+                        {
+                            opponentScore++;
+                            playerScored = false;
+                            scoreboard.setupOpponentScore(opponentScore);
+                        }
+                        resetPositions();
+                        isPlayerShooting = true;
+                        isPlayerSelectingTarget = true;
+                    }
+                }
+            }
         }
+
         glfwSwapBuffers(window);
     }
     glfwTerminate();

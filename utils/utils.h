@@ -131,4 +131,12 @@ Coordinates selectRandomTargetInsideGoal()
     return target;
 }
 
+Coordinates selectRandomTargetAnywhere()
+{
+    float randomX = randomFloat(goalLimits.leftBottom.x * 1.025, goalLimits.rightTop.x * 1.025);
+    float randomY = randomFloat(goalLimits.leftBottom.y * 1.025, goalLimits.rightTop.y * 1.025);
+    Coordinates target = {randomX, randomY};
+    return target;
+}
+
 #endif

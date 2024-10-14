@@ -28,7 +28,7 @@ void Player::movePlayer(bool &isKickAnimationComplete)
     float currentTime = glfwGetTime();
     float deltaTime = currentTime - sprite.lastTime;
 
-    if (deltaTime >= 1.5 / sprite.FPS)
+    if (deltaTime >= 1.0f / sprite.FPS)
     {
         switch (sprite.iFrame)
         {
