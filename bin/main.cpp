@@ -29,6 +29,7 @@ using namespace std;
 #include <target.h>
 #include <background.h>
 #include <goalkeeper.h>
+#include <scoreboard.h>
 
 using namespace glm;
 
@@ -55,6 +56,8 @@ Arrow verticalArrow = Arrow(false);
 Target target;
 Background background;
 Goalkeeper goalkeeper;
+Scoreboard playerScoreboard;
+Scoreboard opponentScoreboard;
 
 // Controle para a seta de direção do chute
 bool isVerticalArrowMoving = false;
@@ -75,6 +78,10 @@ float circleTimer = 0.0f;
 // Resultado do chute
 bool playerScored = false;
 bool playerDefended = false;
+
+// Placar da partida
+int playerScore = 0;
+int opponentScore = 0;
 
 bool mouseClickedOn(GLFWwindow *window, vec3 targetPos)
 {
@@ -225,6 +232,9 @@ int main()
     horizontalArrow.setupSprite();
     verticalArrow.setupSprite();
     target.setupSprite();
+    playerScoreboard.setupSprite();
+    opponentScoreboard.setupSprite();
+    opponentScoreboard.sprite.position.x += 100.0f;
 
     shaderID = setupShader();
     glUseProgram(shaderID);
@@ -249,6 +259,8 @@ int main()
         drawSprite(*goalkeeper.activeSprite, shaderID);
         drawSprite(ball.sprite, shaderID);
         drawSprite(player.sprite, shaderID);
+        drawSprite(playerScoreboard.sprite, shaderID);
+        drawSprite(opponentScoreboard.sprite, shaderID);
 
         if (isPlayerShooting)
         {
@@ -323,7 +335,7 @@ int main()
                                 // If the goalkeeper's animation is complete, reset positions for the next shot
                                 if (isGoalkeeperAnimationComplete)
                                 {
-                                    isItGoal(determineGoalSection(calculatedKickTarget));
+                                    playerScored = isItGoal(determineGoalSection(calculatedKickTarget));
                                     resetPositions();
                                     isPlayerShooting = true;
                                     isPlayerSelectingTarget = true;
@@ -334,6 +346,12 @@ int main()
                     }
                 }
             }
+        }
+        if (playerScored)
+        {
+            playerScore++;
+            playerScored = false;
+            playerScoreboard.sprite.updateFrame(playerScore);
         }
         glfwSwapBuffers(window);
     }
