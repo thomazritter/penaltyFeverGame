@@ -65,6 +65,7 @@ bool isPlayerSelectingTarget = true;
 bool isKickAnimationComplete = false;
 bool isBallAnimationComplete = false;
 bool wasSpacePressed = false;
+bool isGoalkeeperAnimationComplete = false;
 
 Coordinates kickTarget = {0.0f, 0.0f};
 
@@ -179,97 +180,105 @@ int main()
 	// Set up mouse click logging
 	setupMouseClickLogging(window);
 	glDepthFunc(GL_ALWAYS);
+
 	while (!glfwWindowShouldClose(window))
-	{
-		glfwPollEvents();
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // cor de fundo
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    {
+        glfwPollEvents();
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Background color
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		drawSprite(background.sprite, shaderID);
-		drawSprite(goalkeeper.sprite, shaderID);
-		drawSprite(ball.sprite, shaderID);
-		drawSprite(player.sprite, shaderID);
+        drawSprite(background.sprite, shaderID);
+        drawSprite(goalkeeper.sprite, shaderID);
+        drawSprite(ball.sprite, shaderID);
+        drawSprite(player.sprite, shaderID);
 
-		if (isPlayerShooting)
-		{
-			if (isPlayerSelectingTarget)
-			{
+        if (isPlayerShooting)
+        {
+            if (isPlayerSelectingTarget)
+            {
+                if (!isVerticalArrowMoving)
+                {
+                    horizontalArrow.move(goalLimits);
+                    drawSprite(horizontalArrow.sprite, shaderID);
+                }
+                else
+                {
+                    verticalArrow.move(goalLimits);
+                    drawSprite(verticalArrow.sprite, shaderID);
+                    drawSprite(horizontalArrow.sprite, shaderID);
+                }
 
-				if (!isVerticalArrowMoving)
-				{
-					horizontalArrow.move(goalLimits);
-					drawSprite(horizontalArrow.sprite, shaderID);
-				}
-				else
-				{
-					verticalArrow.move(goalLimits);
-					drawSprite(verticalArrow.sprite, shaderID);
-					drawSprite(horizontalArrow.sprite, shaderID);
-				}
+                if (keys[GLFW_KEY_SPACE] && !wasSpacePressed)
+                {
+                    if (!isVerticalArrowMoving)
+                    {
+                        kickTarget.x = horizontalArrow.sprite.position.x;
+                        isVerticalArrowMoving = true;
+                    }
+                    else
+                    {
+                        kickTarget.y = verticalArrow.sprite.position.y;
+                        ball.sprite.lastTime = glfwGetTime();
+                        isPlayerSelectingTarget = false;
+                        ball.totalBallDistance = sqrt(pow(kickTarget.x - ball.sprite.position.x, 2) +
+                                                      pow(kickTarget.y - ball.sprite.position.y, 2));
+                    }
+                    wasSpacePressed = true;
+                }
+                else if (!keys[GLFW_KEY_SPACE])
+                {
+                    wasSpacePressed = false;
+                }
+            }
+            else
+            {
+                if (!showTarget)
+                {
+                    target.selectExactKick(kickTarget, goalLimits);
+                    showTarget = true;
+                }
 
-				if (keys[GLFW_KEY_SPACE] && !wasSpacePressed)
-				{
-					if (!isVerticalArrowMoving)
-					{
-						kickTarget.x = horizontalArrow.sprite.position.x;
-						isVerticalArrowMoving = true;
-					}
-					else
-					{
-						kickTarget.y = verticalArrow.sprite.position.y;
-						ball.sprite.lastTime = glfwGetTime();
-						isPlayerSelectingTarget = false;
-						ball.totalBallDistance = sqrt(pow(kickTarget.x - ball.sprite.position.x, 2) + pow(kickTarget.y - ball.sprite.position.y, 2));
-					}
-					wasSpacePressed = true;
-				}
-				else if (!keys[GLFW_KEY_SPACE])
-				{
-					wasSpacePressed = false;
-				}
-			}
-			else
-			{
-				if (!showTarget)
-				{
-					target.selectExactKick(kickTarget, goalLimits);
-					showTarget = true;
-				}
+                if (showTarget)
+                {
+                    circleTimer += glfwGetTime();
+                    if (circleTimer < circleDisplayTime)
+                    {
+                        isKickAnimationComplete = false;
+                        drawSprite(target.sprite, shaderID);
+                    }
+                    else
+                    {
+                        if (!isKickAnimationComplete)
+                        {
+                            player.movePlayer(isKickAnimationComplete);
+                        }
+                        else
+                        {
+                            if (!isBallAnimationComplete)
+                            {
+                                ball.moveBall(isBallAnimationComplete, kickTarget);
+                            }
+                            else
+                            {
+                                // Animate goalkeeper's defense attempt
+                                goalkeeper.moveGoalkeeper(isGoalkeeperAnimationComplete, goalLimits);
 
-				// Mostra o círculo vermelho onde a bola irá
-				if (showTarget)
-				{
-					circleTimer += glfwGetTime();
-					if (circleTimer < circleDisplayTime)
-					{
-						isKickAnimationComplete = false;
-						drawSprite(target.sprite, shaderID);
-					}
-					else
-					{
-						if (!isKickAnimationComplete)
-						{
-							player.movePlayer(isKickAnimationComplete);
-						}
-						else
-						{
-							if (!isBallAnimationComplete)
-							{
-								ball.moveBall(isBallAnimationComplete, kickTarget);
-							}
-							else
-							{
-								resetPositions();
-								isPlayerShooting = true;
-								isPlayerSelectingTarget = true;
-							}
-						}
-					}
-				}
-			}
-		}
-		glfwSwapBuffers(window);
-	}
-	glfwTerminate();
-	return 0;
+                                // If the goalkeeper's animation is complete, reset positions for the next shot
+                                if (isGoalkeeperAnimationComplete)
+                                {
+                                    resetPositions();
+                                    isPlayerShooting = true;
+                                    isPlayerSelectingTarget = true;
+                                    isGoalkeeperAnimationComplete = false; // Reset flag
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        glfwSwapBuffers(window);
+    }
+    glfwTerminate();
+    return 0;
 }
