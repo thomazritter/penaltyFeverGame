@@ -9,6 +9,8 @@
 #include "../Dependencies/stb_image/stb_image.h"
 #include <iostream>
 
+#define BASE_PATH "C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame"
+
 struct Sprite
 {
     GLuint VAO;
@@ -114,8 +116,10 @@ int loadTexture(std::string filePath, int &imgWidth, int &imgHeight)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
+    std::string fullPath = BASE_PATH + filePath;
+
     int nrChannels;
-    unsigned char *data = stbi_load(filePath.c_str(), &imgWidth, &imgHeight, &nrChannels, 0);
+    unsigned char *data = stbi_load(fullPath.c_str(), &imgWidth, &imgHeight, &nrChannels, 0);
 
     if (data)
     {

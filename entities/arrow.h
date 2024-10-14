@@ -24,7 +24,7 @@ Arrow::Arrow(bool isHorizontal) : isHorizontal(isHorizontal) {}
 void Arrow::setupSprite()
 {
     int imgWidth, imgHeight = 0;
-    int arrowTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/arrow/arrow.png", imgWidth, imgHeight);
+    int arrowTexture = loadTexture("/sprites/arrow/arrow.png", imgWidth, imgHeight);
     if (isHorizontal)
     {
         sprite.setupSprite(arrowTexture, glm::vec3(400.0, 300.0, 0.0), glm::vec3(imgWidth * 2, imgHeight * 2, 1.0), 1, 1);

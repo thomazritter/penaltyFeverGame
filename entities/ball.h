@@ -22,7 +22,7 @@ Ball::Ball() {}
 void Ball::setupSprite()
 {
     int imgWidth, imgHeight = 0;
-    int ballTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/ball/movement.png", imgWidth, imgHeight);
+    int ballTexture = loadTexture("/sprites/ball/movement.png", imgWidth, imgHeight);
     sprite.setupSprite(ballTexture, glm::vec3(400.0, 200.0, 0.0), glm::vec3(imgWidth / 3.0 * 3.0, imgHeight * 2, 1.5), 3, 1);
 }
 

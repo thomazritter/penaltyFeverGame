@@ -20,7 +20,7 @@ Target::Target() {}
 void Target::setupSprite()
 {
 	int imgWidth, imgHeight = 0;
-	int redCircleTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/circle/circle.png", imgWidth, imgHeight);
+	int redCircleTexture = loadTexture("/sprites/circle/circle.png", imgWidth, imgHeight);
 	sprite.setupSprite(redCircleTexture, glm::vec3(600.0, 0.0, 0.0), glm::vec3(imgWidth * 5.0f, imgHeight * 5.0f, 1.0), 1, 1);
 }
 

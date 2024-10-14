@@ -19,7 +19,7 @@ Player::Player() {}
 void Player::setupSprite()
 {
     int imgWidth, imgHeight = 0;
-    int playerTexture = loadTexture("C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame/sprites/player/movement.png", imgWidth, imgHeight);
+    int playerTexture = loadTexture("/sprites/player/movement.png", imgWidth, imgHeight);
     sprite.setupSprite(playerTexture, glm::vec3(300.0, 175.0, 0.0), glm::vec3(imgWidth / 2, imgHeight * 2.0, 1.0), 6, 1);
 }
 
