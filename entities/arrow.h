@@ -9,7 +9,7 @@ class Arrow
 {
 public:
     Sprite sprite;
-    float arrowSpeed = 10.0f;
+    float arrowSpeed = 0.2f;
     bool isHorizontal;
     bool isMovingRightOrUp = true;
 

@@ -194,6 +194,22 @@ bool isItGoal(GoalSection playerKickSection, GoalSection goalkeeperDefenseSectio
     }
 }
 
+void checkGameOver(GLFWwindow *window)
+{
+    if (playerScore >= 5 || opponentScore >= 5)
+    {
+        if (playerScore >= 5)
+        {
+            std::cout << "Player wins!" << std::endl;
+        }
+        else
+        {
+            std::cout << "Opponent wins!" << std::endl;
+        }
+        glfwSetWindowShouldClose(window, GL_TRUE);
+    }
+}
+
 int main()
 {
     glfwInit();
@@ -378,6 +394,7 @@ int main()
             }
         }
 
+        checkGameOver(window);
         glfwSwapBuffers(window);
     }
     glfwTerminate();

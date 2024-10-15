@@ -9,7 +9,7 @@
 #include "../Dependencies/stb_image/stb_image.h"
 #include <iostream>
 
-#define BASE_PATH "C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame"
+#define BASE_PATH "c:/Users/Thomaz/Desktop/penaltyFeverGame"
 
 struct Sprite
 {
