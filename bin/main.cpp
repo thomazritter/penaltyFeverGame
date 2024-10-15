@@ -32,6 +32,7 @@ using namespace std;
 #include <background.h>
 #include <goalkeeper.h>
 #include <scoreboard.h>
+#include <gameoverscreen.h>
 
 using namespace glm;
 
@@ -54,6 +55,7 @@ Target target;
 Background background;
 Goalkeeper goalkeeper;
 Scoreboard scoreboard;
+GameOverScreen gameOverScreen;
 
 // Controle para a seta de direção do chute
 bool isVerticalArrowMoving = false;
@@ -81,6 +83,11 @@ bool playerDefended = false;
 // Placar da partida
 int playerScore = 0;
 int opponentScore = 0;
+int playerShots = 0;
+int opponentShots = 0;
+bool suddenDeath = false;
+bool isGameOver = false;
+bool playerWon = false;
 
 Coordinates getMouseClickCoordinates(GLFWwindow *window)
 {
@@ -198,24 +205,61 @@ bool isItGoal(GoalSection playerKickSection, GoalSection goalkeeperDefenseSectio
 
 void checkGameOver(GLFWwindow *window)
 {
-    if (playerScore >= 5 || opponentScore >= 5)
+    if (!suddenDeath)
     {
-        if (playerScore >= 5)
+        if (playerShots < 5 && opponentShots < 5)
         {
-            std::cout << "Player wins!" << std::endl;
+            if (playerScore > opponentScore + (5 - opponentShots))
+            {
+                isGameOver = true;
+                playerWon = true;
+                return;
+            }
+            else if (opponentScore > playerScore + (5 - playerShots))
+            {
+                isGameOver = true;
+                playerWon = false;
+                return;
+            }
         }
-        else
+
+        if (playerShots == 5 && opponentShots == 5)
         {
-            std::cout << "Opponent wins!" << std::endl;
+            if (playerScore == opponentScore)
+            {
+                suddenDeath = true;
+            }
+            else if (playerScore > opponentScore)
+            {
+                isGameOver = true;
+                playerWon = true;
+            }
+            else
+            {
+                isGameOver = true;
+                playerWon = false;
+            }
         }
-        glfwSetWindowShouldClose(window, GL_TRUE);
+    }
+    else
+    {
+        if (playerScore > opponentScore)
+        {
+            isGameOver = true;
+            playerWon = true;
+        }
+        else if (opponentScore > playerScore)
+        {
+            isGameOver = true;
+            playerWon = false;
+        }
     }
 }
 
 int main()
 {
     using namespace std::this_thread; // sleep_for, sleep_until
-    using namespace std::chrono; // nanoseconds, system_clock, seconds
+    using namespace std::chrono;      // nanoseconds, system_clock, seconds
     glfwInit();
     GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "Penalty Fever", nullptr, nullptr);
     glfwMakeContextCurrent(window);
@@ -246,6 +290,7 @@ int main()
     verticalArrow.setupSprite();
     target.setupSprite();
     scoreboard.setupSprite();
+    gameOverScreen.setupSprite();
 
     shaderID = setupShader();
     glUseProgram(shaderID);
@@ -260,146 +305,159 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
+
         glfwPollEvents();
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Background color
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        drawSprite(background.sprite, shaderID);
-        drawSprite(goalkeeper.sprite, shaderID);
-        drawSprite(ball.sprite, shaderID);
-        drawSprite(player.sprite, shaderID);
-        drawSprite(scoreboard.playerScoreboardSprite, shaderID);
-        drawSprite(scoreboard.opponentScoreboardSprite, shaderID);
-
-        if (isPlayerShooting)
+        if (!isGameOver)
         {
-            if (isPlayerSelectingTarget)
-            {
-                if (!isVerticalArrowMoving)
-                {
-                    horizontalArrow.move();
-                    drawSprite(horizontalArrow.sprite, shaderID);
-                }
-                else
-                {
-                    verticalArrow.move();
-                    drawSprite(verticalArrow.sprite, shaderID);
-                    drawSprite(horizontalArrow.sprite, shaderID);
-                }
+            drawSprite(background.sprite, shaderID);
+            drawSprite(goalkeeper.sprite, shaderID);
+            drawSprite(ball.sprite, shaderID);
+            drawSprite(player.sprite, shaderID);
+            drawSprite(scoreboard.playerScoreboardSprite, shaderID);
+            drawSprite(scoreboard.opponentScoreboardSprite, shaderID);
 
-                if (keys[GLFW_KEY_SPACE] && !wasSpacePressed)
+            if (isPlayerShooting)
+            {
+                if (isPlayerSelectingTarget)
                 {
                     if (!isVerticalArrowMoving)
                     {
-                        selectedKickTarget.x = horizontalArrow.sprite.position.x;
-                        isVerticalArrowMoving = true;
+                        horizontalArrow.move();
+                        drawSprite(horizontalArrow.sprite, shaderID);
                     }
                     else
                     {
-                        selectedKickTarget.y = verticalArrow.sprite.position.y;
-                        isPlayerSelectingTarget = false;
-                        playerKickSection = determineGoalSection(selectedKickTarget);
-                        goalkeeperTarget = selectRandomTargetInsideGoal();
-                        goalkeeperDefenseSection = determineGoalSection(goalkeeperTarget);
-                        goalkeeper.defineTargetBySection(goalkeeperDefenseSection);
-                        ball.setTarget(playerKickSection);
-                        isKickAnimationComplete = false;
+                        verticalArrow.move();
+                        drawSprite(verticalArrow.sprite, shaderID);
+                        drawSprite(horizontalArrow.sprite, shaderID);
                     }
-                    wasSpacePressed = true;
+
+                    if (keys[GLFW_KEY_SPACE] && !wasSpacePressed)
+                    {
+                        if (!isVerticalArrowMoving)
+                        {
+                            selectedKickTarget.x = horizontalArrow.sprite.position.x;
+                            isVerticalArrowMoving = true;
+                        }
+                        else
+                        {
+                            selectedKickTarget.y = verticalArrow.sprite.position.y;
+                            isPlayerSelectingTarget = false;
+                            playerKickSection = determineGoalSection(selectedKickTarget);
+                            goalkeeperTarget = selectRandomTargetInsideGoal();
+                            goalkeeperDefenseSection = determineGoalSection(goalkeeperTarget);
+                            goalkeeper.defineTargetBySection(goalkeeperDefenseSection);
+                            ball.setTarget(playerKickSection);
+                            isKickAnimationComplete = false;
+                        }
+                        wasSpacePressed = true;
+                    }
+                    else if (!keys[GLFW_KEY_SPACE])
+                    {
+                        wasSpacePressed = false;
+                    }
                 }
-                else if (!keys[GLFW_KEY_SPACE])
+                else
                 {
-                    wasSpacePressed = false;
+
+                    if (!isKickAnimationComplete)
+                    {
+                        player.movePlayer(isKickAnimationComplete);
+                    }
+                    else
+                    {
+                        if (!isBallAnimationComplete || !isGoalkeeperAnimationComplete)
+                        {
+                            ball.moveBall(isBallAnimationComplete);
+                            goalkeeper.moveGoalkeeper(isGoalkeeperAnimationComplete);
+                        }
+                        else
+                        {
+
+                            playerScored = isItGoal(playerKickSection, goalkeeperDefenseSection);
+                            if (playerScored)
+                            {
+                                playerScore++;
+                                playerScored = false;
+                                scoreboard.setupPlayerScore(playerScore);
+                            }
+                            resetPositions();
+                            isPlayerShooting = false;
+                            playerShots++;
+                            // sleep_for(seconds(2)); // Sleep before switching to the opponent's turn
+                        }
+                    }
                 }
             }
             else
             {
-
-                if (!isKickAnimationComplete)
+                if (!playerHasSelectedDefenseTarget && !isKickAnimationComplete)
                 {
-                    player.movePlayer(isKickAnimationComplete);
+                    goalkeeperTarget = getMouseClickCoordinates(window);
+                    if (determineGoalSection(goalkeeperTarget) != OUTSIDE)
+                    {
+                        playerHasSelectedDefenseTarget = true;
+                        goalkeeperDefenseSection = determineGoalSection(goalkeeperTarget);
+                        goalkeeper.defineTargetBySection(goalkeeperDefenseSection);
+                    }
+                }
+                if (!showTarget)
+                {
+                    selectedKickTarget = selectRandomTargetAnywhere();
+                    playerKickSection = determineGoalSection(selectedKickTarget);
+                    ball.setTarget(playerKickSection);
+                    target.setTargetBySection(playerKickSection);
+                    showTarget = true;
+                    isKickAnimationComplete = false;
                 }
                 else
                 {
-                    if (!isBallAnimationComplete || !isGoalkeeperAnimationComplete)
+                    circleTimer += 1.0f;
+                    if (circleTimer <= circleDisplayTime)
                     {
-                        ball.moveBall(isBallAnimationComplete);
-                        goalkeeper.moveGoalkeeper(isGoalkeeperAnimationComplete);
+                        drawSprite(target.sprite, shaderID);
+                    }
+                    if (!isKickAnimationComplete)
+                    {
+                        player.movePlayer(isKickAnimationComplete);
                     }
                     else
                     {
-
-                        playerScored = isItGoal(playerKickSection, goalkeeperDefenseSection);
-                        if (playerScored)
+                        if (!isBallAnimationComplete || !isGoalkeeperAnimationComplete)
                         {
-                            playerScore++;
-                            playerScored = false;
-                            scoreboard.setupPlayerScore(playerScore);
+                            ball.moveBall(isBallAnimationComplete);
+                            goalkeeper.moveGoalkeeper(isGoalkeeperAnimationComplete);
                         }
-                        resetPositions();
-                        isPlayerShooting = false;
-                        //sleep_for(seconds(2)); // Sleep before switching to the opponent's turn
+                        else
+                        {
+                            playerScored = isItGoal(playerKickSection, goalkeeperDefenseSection);
+                            if (playerScored)
+                            {
+                                opponentScore++;
+                                playerScored = false;
+                                scoreboard.setupOpponentScore(opponentScore);
+                            }
+                            opponentShots++;
+                            resetPositions();
+                            isPlayerShooting = true;
+                            isPlayerSelectingTarget = true;
+                        }
                     }
                 }
             }
+            checkGameOver(window);
         }
         else
         {
-            if (!playerHasSelectedDefenseTarget && !isKickAnimationComplete)
+            if (playerWon)
             {
-                goalkeeperTarget = getMouseClickCoordinates(window);
-                if (determineGoalSection(goalkeeperTarget) != OUTSIDE)
-                {
-                    playerHasSelectedDefenseTarget = true;
-                    goalkeeperDefenseSection = determineGoalSection(goalkeeperTarget);
-                    goalkeeper.defineTargetBySection(goalkeeperDefenseSection);
-                }
+                gameOverScreen.sprite.updateFrame(1);
             }
-            if (!showTarget)
-            {
-                selectedKickTarget = selectRandomTargetAnywhere();
-                playerKickSection = determineGoalSection(selectedKickTarget);
-                ball.setTarget(playerKickSection);
-                target.setTargetBySection(playerKickSection);
-                showTarget = true;
-                isKickAnimationComplete = false;
-            }
-            else
-            {
-                circleTimer += 1.0f;
-                if (circleTimer <= circleDisplayTime)
-                {
-                    drawSprite(target.sprite, shaderID);
-                }
-                if (!isKickAnimationComplete)
-                {
-                    player.movePlayer(isKickAnimationComplete);
-                }
-                else
-                {
-                    if (!isBallAnimationComplete || !isGoalkeeperAnimationComplete)
-                    {
-                        ball.moveBall(isBallAnimationComplete);
-                        goalkeeper.moveGoalkeeper(isGoalkeeperAnimationComplete);
-                    }
-                    else
-                    {
-                        playerScored = isItGoal(playerKickSection, goalkeeperDefenseSection);
-                        if (playerScored)
-                        {
-                            opponentScore++;
-                            playerScored = false;
-                            scoreboard.setupOpponentScore(opponentScore);
-                        }
-                        resetPositions();
-                        isPlayerShooting = true;
-                        isPlayerSelectingTarget = true;
-                    }
-                }
-            }
+            drawSprite(gameOverScreen.sprite, shaderID);
         }
-
-        checkGameOver(window);
         glfwSwapBuffers(window);
     }
     glfwTerminate();
