@@ -5,9 +5,6 @@
 #include <GLFW/glfw3.h>
 #include <utils.h>
 #include <random>
-#include <vector>
-
-using namespace std;
 
 class Goalkeeper
 {
