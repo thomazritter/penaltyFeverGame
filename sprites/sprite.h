@@ -9,7 +9,7 @@
 #include "../Dependencies/stb_image/stb_image.h"
 #include <iostream>
 
-#define BASE_PATH "c:/Users/Thomaz/Desktop/penaltyFeverGame"
+#define BASE_PATH "C:/Users/Carlos/Desktop/Unisinos/7semestre/PG/AtividadesPG/penaltyFeverGame"
 
 struct Sprite
 {
@@ -45,6 +45,7 @@ void Sprite::setupSprite(int texID, glm::vec3 position, glm::vec3 dimensions, in
     this->position = position;
     this->nAnimations = nAnimations;
     this->nFrames = nFrames;
+    this->size = dimensions; // Set the size based on dimensions
     iAnimation = 0;
 
     d.s = 1.0 / (float)nFrames;
@@ -55,7 +56,7 @@ void Sprite::setupSprite(int texID, glm::vec3 position, glm::vec3 dimensions, in
     // Aqui setamos as coordenadas x, y e z do triângulo e as armazenamos de forma
     // sequencial, já visando mandar para o VBO (Vertex Buffer Objects)
     // Cada atributo do vértice (coordenada, cores, coordenadas de textura, normal, etc)
-    // Pode ser arazenado em um VBO único ou em VBOs separados
+    // Pode ser armazenado em um VBO único ou em VBOs separados
     GLfloat vertices[] = {
         // x   y     z    s     		t
         // T0
@@ -78,7 +79,7 @@ void Sprite::setupSprite(int texID, glm::vec3 position, glm::vec3 dimensions, in
     // Vincula (bind) o VAO primeiro, e em seguida  conecta e seta o(s) buffer(s) de vértices
     // e os ponteiros para os atributos
     glBindVertexArray(VAO);
-    // Para cada atributo do vertice, criamos um "AttribPointer" (ponteiro para o atributo), indicando:
+    // Para cada atributo do vértice, criamos um "AttribPointer" (ponteiro para o atributo), indicando:
     //  Localização no shader * (a localização dos atributos devem ser correspondentes no layout especificado no vertex shader)
     //  Numero de valores que o atributo tem (por ex, 3 coordenadas xyz)
     //  Tipo do dado
