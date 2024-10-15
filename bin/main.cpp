@@ -3,8 +3,7 @@
 #include <assert.h>
 #include <chrono>
 #include <thread>
-
-using namespace std;
+#include <irrKlang.h>
 
 // GLAD
 #include <glad/glad.h>
@@ -33,7 +32,12 @@ using namespace std;
 #include <goalkeeper.h>
 #include <scoreboard.h>
 
+using namespace std;
+using namespace irrklang;
 using namespace glm;
+
+// Setup IRRKLANG audio
+ISoundEngine *SoundEngine = createIrrKlangDevice();
 
 // Protótipo da função de callback de teclado
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
@@ -214,8 +218,9 @@ void checkGameOver(GLFWwindow *window)
 
 int main()
 {
-    using namespace std::this_thread; // sleep_for, sleep_until
-    using namespace std::chrono; // nanoseconds, system_clock, seconds
+    //using namespace std::this_thread; // sleep_for, sleep_until
+    //using namespace std::chrono; // nanoseconds, system_clock, seconds
+
     glfwInit();
     GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "Penalty Fever", nullptr, nullptr);
     glfwMakeContextCurrent(window);
@@ -229,14 +234,12 @@ int main()
     // Obtendo as informações de versão
     const GLubyte *renderer = glGetString(GL_RENDERER); /* get renderer string */
     const GLubyte *version = glGetString(GL_VERSION);   /* version as a string */
-    cout << "Renderer: " << renderer << endl;
-    cout << "OpenGL version supported " << version << endl;
+    std::cout << "Renderer: " << renderer << endl;
+    std::cout << "OpenGL version supported " << version << endl;
     // Definindo as dimensões da viewport com as mesmas dimensões da janela da aplicação
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);
-    // Compilando e buildando o programa de shader
-    // Gerando um buffer simples, com a geometria de um triângulo
 
     background.setupSprite();
     player.setupSprite();
@@ -257,6 +260,9 @@ int main()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_ALWAYS);
+
+    //comecar audio
+    //SoundEngine->play2D("soundtrack/crowd.mp3", true);
 
     while (!glfwWindowShouldClose(window))
     {

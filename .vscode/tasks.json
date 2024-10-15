@@ -11,17 +11,21 @@
         "-I${workspaceFolder}/Dependencies/glfw-3.4.bin.WIN64/include", // GLFW
         "-I${workspaceFolder}/Dependencies/glm", // GLM
         "-I${workspaceFolder}/Dependencies/stb_image", // STB_IMAGE
+        "-I${workspaceFolder}/audio/irrKlang/include",
         "-I${workspaceFolder}/sprites", // SPRITES
         "-I${workspaceFolder}/shader", // Shader
         "-I${workspaceFolder}/utils",
         "-I${workspaceFolder}/entities",
+        "-I${workspaceFolder}/audio/irrKlang/include",
         "${file}",
         "${workspaceFolder}/glad.c", // GLAD
         "${workspaceFolder}/Dependencies/stb_image/stb_image.cpp",
         "-o",
         "${fileDirname}\\${fileBasenameNoExtension}.exe",
         "-L${workspaceFolder}/Dependencies/glfw-3.4.bin.WIN64/lib-mingw-w64",
-        "-lglfw3dll"
+        "-lglfw3dll",
+        "-L${workspaceFolder}/audio/irrKlang/lib",
+        "-lirrKlang"
       ],
       "options": {
         "cwd": "C:\\msys64\\ucrt64\\bin"
