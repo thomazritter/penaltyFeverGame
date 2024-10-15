@@ -65,7 +65,7 @@ void Goalkeeper::moveGoalkeeper(bool &isGoalkeeperAnimationComplete)
     else
     {
         sprite.isMirrored = defenseSection == LEFT_BOTTOM || defenseSection == LEFT_TOP ? false : true;
-        if (deltaTime >= 0.5f / sprite.FPS)
+        if (deltaTime >= 0.75f / sprite.FPS)
         {
             if (parabolaPosition < jumpParabola.size())
             {

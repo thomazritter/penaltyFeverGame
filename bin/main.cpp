@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <assert.h>
+#include <chrono>
+#include <thread>
 
 using namespace std;
 
@@ -212,6 +214,8 @@ void checkGameOver(GLFWwindow *window)
 
 int main()
 {
+    using namespace std::this_thread; // sleep_for, sleep_until
+    using namespace std::chrono; // nanoseconds, system_clock, seconds
     glfwInit();
     GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "Penalty Fever", nullptr, nullptr);
     glfwMakeContextCurrent(window);
@@ -334,6 +338,7 @@ int main()
                         }
                         resetPositions();
                         isPlayerShooting = false;
+                        //sleep_for(seconds(2)); // Sleep before switching to the opponent's turn
                     }
                 }
             }
