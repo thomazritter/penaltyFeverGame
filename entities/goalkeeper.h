@@ -16,7 +16,6 @@ public:
     void setupSprite();
     void moveGoalkeeper(bool &isGoalkeeperAnimationComplete);
     void resetPositions();
-    int chooseDefenseType(); // Chooses defense type randomly
     void defineTargetBySection(GoalSection section);
 
 private:
@@ -35,15 +34,6 @@ void Goalkeeper::setupSprite()
     // Load left-side texture (movement.png)
     int goalkeeperTexture = loadTexture("/sprites/goalkeeper/movement.png", imgWidth, imgHeight);
     sprite.setupSprite(goalkeeperTexture, glm::vec3(400.0, 475.0, 0.0), glm::vec3(imgWidth / 3, imgHeight * 3.0, 1.0), 7, 1);
-}
-
-// Choose defense type (0 = Left Bottom, 1 = Right Bottom, 2 = Up)
-int Goalkeeper::chooseDefenseType()
-{
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, 2);
-    return dis(gen);
 }
 
 void Goalkeeper::moveGoalkeeper(bool &isGoalkeeperAnimationComplete)
