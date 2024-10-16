@@ -79,8 +79,8 @@ float circleDisplayTime = 5.0f;
 float circleTimer = 0.0f;
 
 // Resultado do chute
-bool playerScored = false;
-bool playerDefended = false;
+bool goalkeeperDefended = false;
+bool isGoal = true;
 
 // Placar da partida
 int playerScore = 0;
@@ -143,67 +143,9 @@ void resetPositions()
     circleTimer = 0.0f;
 }
 
-bool isItGoal(GoalSection playerKickSection, GoalSection goalkeeperDefenseSection)
+bool isItGoal()
 {
-    switch (playerKickSection)
-    {
-    case LEFT_BOTTOM:
-        if (goalkeeperDefenseSection == LEFT_BOTTOM)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    case LEFT_TOP:
-        if (goalkeeperDefenseSection == LEFT_TOP)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    case MIDDLE_BOTTOM:
-        if (goalkeeperDefenseSection == MIDDLE_BOTTOM)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    case MIDDLE_TOP:
-        if (goalkeeperDefenseSection == MIDDLE_TOP)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    case RIGHT_BOTTOM:
-        if (goalkeeperDefenseSection == RIGHT_BOTTOM)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    case RIGHT_TOP:
-        if (goalkeeperDefenseSection == RIGHT_TOP)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    default:
-        return false;
-    }
+    return !goalkeeper.sprite.checkCollision(ball.sprite);
 }
 
 void checkGameOver(GLFWwindow *window)
@@ -320,9 +262,9 @@ int main()
             drawSprite(menu.button, shaderID);
             Coordinates clickCoordinates = getMouseClickCoordinates(window);
             if (clickCoordinates.x >= menu.button.position.x &&
-                clickCoordinates.x <= menu.button.position.x + menu.button.size.x &&
+                clickCoordinates.x <= menu.button.position.x + menu.button.dimensions.x &&
                 clickCoordinates.y >= menu.button.position.y &&
-                clickCoordinates.y <= menu.button.position.y + menu.button.size.y)
+                clickCoordinates.y <= menu.button.position.y + menu.button.dimensions.y)
             {
                 isGameStarted = true;
             }
@@ -393,18 +335,30 @@ int main()
                             {
                                 ball.moveBall(isBallAnimationComplete);
                                 goalkeeper.moveGoalkeeper(isGoalkeeperAnimationComplete);
+
+                                if (playerKickSection != GoalSection::OUTSIDE)
+                                {
+                                    goalkeeperDefended = !isItGoal();
+                                    if (goalkeeperDefended)
+                                    {
+                                        ball.setTarget(GoalSection::OUTSIDE);
+                                        isGoal = false;
+                                    }
+                                }
+                                else
+                                {
+                                    isGoal = false;
+                                }
                             }
                             else
                             {
-
-                                playerScored = isItGoal(playerKickSection, goalkeeperDefenseSection);
-                                if (playerScored)
+                                if (isGoal)
                                 {
                                     playerScore++;
-                                    playerScored = false;
                                     scoreboard.setupPlayerScore(playerScore);
                                 }
                                 resetPositions();
+                                isGoal = true;
                                 isPlayerShooting = false;
                                 playerShots++;
                                 // sleep_for(seconds(2)); // Sleep before switching to the opponent's turn
@@ -450,18 +404,30 @@ int main()
                             {
                                 ball.moveBall(isBallAnimationComplete);
                                 goalkeeper.moveGoalkeeper(isGoalkeeperAnimationComplete);
+                                if (playerKickSection != GoalSection::OUTSIDE)
+                                {
+                                    goalkeeperDefended = !isItGoal();
+                                    if (goalkeeperDefended)
+                                    {
+                                        ball.setTarget(GoalSection::OUTSIDE);
+                                        isGoal = false;
+                                    }
+                                }
+                                else
+                                {
+                                    isGoal = false;
+                                }
                             }
                             else
                             {
-                                playerScored = isItGoal(playerKickSection, goalkeeperDefenseSection);
-                                if (playerScored)
+                                if (isGoal)
                                 {
                                     opponentScore++;
-                                    playerScored = false;
                                     scoreboard.setupOpponentScore(opponentScore);
                                 }
                                 opponentShots++;
                                 resetPositions();
+                                isGoal = true;
                                 isPlayerShooting = true;
                                 isPlayerSelectingTarget = true;
                             }

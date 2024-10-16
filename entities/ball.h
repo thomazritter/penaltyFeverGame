@@ -43,7 +43,7 @@ void Ball::moveBall(bool &isBallAnimationComplete)
         float distance = sqrt(dx * dx + dy * dy); // Hypotenuse
 
         // Only move the ball if the distance is greater than a small threshold
-        if (distance > ballSpeed)
+        if (distance >= ballSpeed)
         {
             // Normalize the direction vector by dividing by the distance (hypotenuse)
             float directionX = dx / distance;

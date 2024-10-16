@@ -33,7 +33,7 @@ void Goalkeeper::setupSprite()
 
     // Load left-side texture (movement.png)
     int goalkeeperTexture = loadTexture("/sprites/goalkeeper/movement.png", imgWidth, imgHeight);
-    sprite.setupSprite(goalkeeperTexture, glm::vec3(400.0, 475.0, 0.0), glm::vec3(imgWidth / 3, imgHeight * 3.0, 1.0), 7, 1);
+    sprite.setupSprite(goalkeeperTexture, glm::vec3(400.0, 475.0, 0.0), glm::vec3(imgWidth / 4.0, imgHeight * 3.0, 1.0), 7, 1);
 }
 
 void Goalkeeper::moveGoalkeeper(bool &isGoalkeeperAnimationComplete)
@@ -55,7 +55,7 @@ void Goalkeeper::moveGoalkeeper(bool &isGoalkeeperAnimationComplete)
     else
     {
         sprite.isMirrored = defenseSection == LEFT_BOTTOM || defenseSection == LEFT_TOP ? false : true;
-        if (deltaTime >= 0.75f / sprite.FPS)
+        if (deltaTime >= 1.0f / sprite.FPS)
         {
             if (parabolaPosition < jumpParabola.size())
             {
@@ -121,7 +121,7 @@ void Goalkeeper::calculateJumpParabola(Coordinates jumpTarget)
     float root2 = jumpTarget.x + distance;
 
     // A negative value for 'a' makes the parabola open downwards
-    float a = -0.0015;
+    float a = -0.0001;
 
     // Calculate parabola points
     int steps = sprite.FPS; // Number of steps for smoothness

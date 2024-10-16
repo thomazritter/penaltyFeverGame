@@ -20,7 +20,7 @@ void Player::setupSprite()
 {
     int imgWidth, imgHeight = 0;
     int playerTexture = loadTexture("/sprites/player/movement.png", imgWidth, imgHeight);
-    sprite.setupSprite(playerTexture, glm::vec3(300.0, 175.0, 0.0), glm::vec3(imgWidth / 2, imgHeight * 2.0, 1.0), 6, 1);
+    sprite.setupSprite(playerTexture, glm::vec3(300.0, 175.0, 0.0), glm::vec3(imgWidth / 3, imgHeight * 2.0, 1.0), 6, 1);
 }
 
 void Player::movePlayer(bool &isKickAnimationComplete)
@@ -28,7 +28,7 @@ void Player::movePlayer(bool &isKickAnimationComplete)
     float currentTime = glfwGetTime();
     float deltaTime = currentTime - sprite.lastTime;
 
-    if (deltaTime >= 1.0f / sprite.FPS)
+    if (deltaTime >= 3.0f / sprite.FPS)
     {
         switch (sprite.iFrame)
         {

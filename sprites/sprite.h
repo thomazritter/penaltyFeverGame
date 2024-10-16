@@ -36,6 +36,16 @@ struct Sprite
     }
 
     void setupSprite(int texID, glm::vec3 position, glm::vec3 dimensions, int nFrames, int nAnimations);
+
+    // Function to check for collision with another sprite
+    bool checkCollision(const Sprite &other) const
+    {
+        bool collisionX = position.x + dimensions.x >= other.position.x &&
+                          other.position.x + other.dimensions.x >= position.x;
+        bool collisionY = position.y + dimensions.y >= other.position.y &&
+                          other.position.y + other.dimensions.y >= position.y;
+        return collisionX && collisionY;
+    }
 };
 
 void Sprite::setupSprite(int texID, glm::vec3 position, glm::vec3 dimensions, int nFrames, int nAnimations)
@@ -45,7 +55,6 @@ void Sprite::setupSprite(int texID, glm::vec3 position, glm::vec3 dimensions, in
     this->position = position;
     this->nAnimations = nAnimations;
     this->nFrames = nFrames;
-    this->size = dimensions; // Set the size based on dimensions
     iAnimation = 0;
 
     d.s = 1.0 / (float)nFrames;
