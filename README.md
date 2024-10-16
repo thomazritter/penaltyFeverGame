@@ -33,3 +33,7 @@ Para compilar e executar o projeto, siga os passos abaixo:
 
 - Thomaz Justo
 - Carlos Souza
+
+## Link para o vídeo de apresentação:
+
+- https://www.youtube.com/watch?v=rvTUycuawfg
